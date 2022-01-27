@@ -1,4 +1,4 @@
-import { Cell, config, core, helpers, Indexer, RPC, toolkit, utils } from "@ckb-lumos/lumos";
+import { config, helpers, Indexer } from "@ckb-lumos/lumos";
 
 export const CONFIG = config.createConfig({
   PREFIX: "ckt",
@@ -25,7 +25,6 @@ config.initializeConfig(CONFIG);
 
 const CKB_RPC_URL = "https://testnet.ckb.dev/rpc";
 const CKB_INDEXER_URL = "https://testnet.ckb.dev/indexer";
-const rpc = new RPC(CKB_RPC_URL);
 const indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
 
 // prettier-ignore
