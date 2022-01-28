@@ -1,5 +1,5 @@
-import { SUDT_WHITE_LIST } from './tokenList';
-import { PwUpConfig, PwUpTypes, Sudt, SudtCell } from "./PwUpTypes";
+import { SUDT_WHITE_LIST } from "./tokenList";
+import { NetworkType, PwUpConfig, PwUpTypes, Sudt, SudtCell } from "./PwUpTypes";
 import { BI, Cell, config, core, helpers, Indexer, RPC, toolkit, utils, Address, Script } from "@ckb-lumos/lumos";
 import { default as createKeccak } from "keccak";
 
@@ -55,7 +55,7 @@ export function asyncSleep(ms: number): Promise<void> {
 }
 
 function findCellSudt(cell: Cell, whiteList: Sudt[]): Sudt | undefined {
-  if(cell.cell_output.type){
+  if (cell.cell_output.type) {
     for (let index = 0; index < whiteList.length; index++) {
       const sudt = whiteList[index];
       if (
@@ -67,28 +67,51 @@ function findCellSudt(cell: Cell, whiteList: Sudt[]): Sudt | undefined {
       }
     }
   }
-  return undefined
+  return undefined;
 }
 
 export class PwUp implements PwUpTypes {
   config: PwUpConfig;
   isConnected: boolean;
-  constructor(config: PwUpConfig) {
-    this.config = config;
+  constructor(network: NetworkType) {
     this.isConnected = false;
+    if (network === "AGGRON4") {
+      this.config = {
+        network: "AGGRON4",
+        supportedSudts: SUDT_WHITE_LIST as Sudt[],
+        ckbRpcUrl: CKB_RPC_URL,
+        indexerRpcUrl: CKB_INDEXER_URL,
+        pwLockScriptConfig: CONFIG.SCRIPTS.PW_LOCK,
+        omniLockScriptConfig: CONFIG.SCRIPTS.OMNI_LOCK,
+      };
+    } else if (network === "LINA") {
+      this.config = {
+        network: "LINA",
+        supportedSudts: SUDT_WHITE_LIST as Sudt[],
+        ckbRpcUrl: CKB_RPC_URL,
+        indexerRpcUrl: CKB_INDEXER_URL,
+        pwLockScriptConfig: CONFIG.SCRIPTS.PW_LOCK,
+        omniLockScriptConfig: CONFIG.SCRIPTS.OMNI_LOCK,
+      };
+    } else {
+      throw new Error("Network not supported");
+    }
   }
-  async connectToWallet():Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.isConnected = true;
-      resolve();
-    })
-  }
-  
-  getEthAddress(): Address{
-    return ethereum.selectedAddress
-  };
 
-  getPwAddress(): Address{
+  async connectToWallet(): Promise<void> {
+    ethereum
+      .enable()
+      .then(([ethAddr]: string[]) => {
+        this.isConnected = true;
+        console.log("Connected to wallet", ethAddr);
+      })
+  }
+
+  getEthAddress(): Address {
+    return ethereum.selectedAddress;
+  }
+
+  getPwAddress(): Address {
     const pwLock: Script = {
       code_hash: CONFIG.SCRIPTS.PW_LOCK.CODE_HASH,
       hash_type: CONFIG.SCRIPTS.PW_LOCK.HASH_TYPE,
@@ -96,10 +119,10 @@ export class PwUp implements PwUpTypes {
     };
 
     const pwAddr = helpers.generateAddress(pwLock);
-    return pwAddr
-  };
+    return pwAddr;
+  }
 
-  getOmniAddress(): Address{
+  getOmniAddress(): Address {
     const omniLock: Script = {
       code_hash: CONFIG.SCRIPTS.OMNI_LOCK.CODE_HASH,
       hash_type: CONFIG.SCRIPTS.OMNI_LOCK.HASH_TYPE,
@@ -112,19 +135,19 @@ export class PwUp implements PwUpTypes {
     };
 
     const omniAddr = helpers.generateAddress(omniLock);
-    return omniAddr
-  };
+    return omniAddr;
+  }
 
   getSudtWhiteList(): Sudt[] {
     return this.config.supportedSudts || SUDT_WHITE_LIST;
   }
 
-  async listSudtCells(address?: string | undefined):Promise<SudtCell[]>{
+  async listSudtCells(address?: string | undefined): Promise<SudtCell[]> {
     const fromScript = helpers.parseAddress(this.getPwAddress());
     const collectedCells: SudtCell[] = [];
     const collector = indexer.collector({ lock: fromScript });
     for await (const cell of collector.collect()) {
-      const result = findCellSudt(cell, this.getSudtWhiteList()) 
+      const result = findCellSudt(cell, this.getSudtWhiteList());
       if (result) {
         collectedCells.push({
           sudt: result,
@@ -134,11 +157,11 @@ export class PwUp implements PwUpTypes {
       }
     }
     return new Promise((resolve, reject) => {
-      resolve([])
-    })
+      resolve([]);
+    });
   }
 
-  async transferPwToOmni(cells: SudtCell[]):Promise<Address>{
+  async transferPwToOmni(cells: SudtCell[]): Promise<Address> {
     let tx = helpers.TransactionSkeleton({});
     const fromScript = helpers.parseAddress(this.getPwAddress());
     const toScript = helpers.parseAddress(this.getOmniAddress());
@@ -156,7 +179,7 @@ export class PwUp implements PwUpTypes {
     const txFee = BI.from(100000);
     for (let index = 0; index < ouputCells.length; index++) {
       const cell = ouputCells[index];
-      const minimalCapacity = helpers.minimalCellCapacity(cell)
+      const minimalCapacity = helpers.minimalCellCapacity(cell);
       if (BI.from(minimalCapacity).add(txFee).lt(BI.from(cell.cell_output.capacity))) {
         cell.cell_output.capacity = BI.from(cell.cell_output.capacity).sub(txFee).toHexString();
         payFeeFlag = true;
@@ -178,7 +201,7 @@ export class PwUp implements PwUpTypes {
       const collector = indexer.collector({ lock: fromScript, type: "empty" });
       for await (const cell of collector.collect()) {
         if (!cell.data || cell.data === "0x" || cell.data === "0x0" || cell.data === "0x00") {
-          collectedSum  = collectedSum.add(BI.from(cell.cell_output.capacity))
+          collectedSum = collectedSum.add(BI.from(cell.cell_output.capacity));
           inputCells.push(cell);
           if (collectedSum.gte(needCapacity)) break;
         }

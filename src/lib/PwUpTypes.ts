@@ -1,4 +1,3 @@
-import { SudtCell } from './PwUpTypes';
 import { Address, BI, Cell, config, Hash, Script } from "@ckb-lumos/lumos";
 
 export interface Sudt {
@@ -16,8 +15,9 @@ export interface SudtCell {
   readonly amount: BI;
 }
 
+export type NetworkType = "AGGRON4" | "LINA";
 export interface PwUpConfig {
-  readonly network: "AGGRON4" | "LINA";
+  readonly network: NetworkType;
 
   readonly ckbRpcUrl: string;
   readonly indexerRpcUrl: string;
