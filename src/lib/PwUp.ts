@@ -59,8 +59,6 @@ function findCellSudt(cell: Cell, whiteList: Sudt[]): Sudt | undefined {
     for (let index = 0; index < whiteList.length; index++) {
       const sudt = whiteList[index];
       if (
-        sudt.type.code_hash === cell.cell_output.type!.code_hash &&
-        sudt.type.hash_type === cell.cell_output.type!.hash_type &&
         sudt.type.args === cell.cell_output.type!.args
       ) {
         return sudt;
@@ -108,7 +106,11 @@ export class PwUp implements PwUpTypes {
   }
 
   getEthAddress(): Address {
-    return ethereum.selectedAddress;
+    if( ethereum && ethereum.selectedAddress ) {
+      return ethereum.selectedAddress;
+    } else{
+      throw new Error("Please connect wallet first");
+    }
   }
 
   getPwAddress(): Address {
@@ -145,20 +147,22 @@ export class PwUp implements PwUpTypes {
   async listSudtCells(address?: string | undefined): Promise<SudtCell[]> {
     const fromScript = helpers.parseAddress(this.getPwAddress());
     const collectedCells: SudtCell[] = [];
-    const collector = indexer.collector({ lock: fromScript });
+    const collector = indexer.collector({ lock: fromScript, type: {
+      code_hash: CONFIG.SCRIPTS.SUDT.CODE_HASH,
+      hash_type: CONFIG.SCRIPTS.SUDT.HASH_TYPE,
+      args: "0x"
+    } });
     for await (const cell of collector.collect()) {
       const result = findCellSudt(cell, this.getSudtWhiteList());
       if (result) {
         collectedCells.push({
-          sudt: result,
+          sudt: result as Sudt,
           cell,
           amount: BI.from(utils.readBigUInt128LE(cell.data)),
         });
       }
     }
-    return new Promise((resolve, reject) => {
-      resolve([]);
-    });
+    return collectedCells
   }
 
   async transferPwToOmni(cells: SudtCell[]): Promise<Address> {
