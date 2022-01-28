@@ -39,6 +39,7 @@ export default function WalletContext() {
 
       pwUp.listSudtCells().then((cells) => {
         setPwSudtCells(cells);
+        setTransSudtCells(cells);
         setCheckedState(new Array(cells.length).fill(true));
       });
 
@@ -73,13 +74,13 @@ export default function WalletContext() {
     if (isSendingTx) return;
     setIsSendingTx(true);
 
+    console.log(transSudtCells);
+
     pwUp
       .transferPwToOmni(transSudtCells)
       .then(setTxHash)
-      .then(() => {
-        const omniAddr = pwUp.getOmniAddress();
-        setOmniAddr(omniAddr);
-      });
+      .catch((e) => alert(e.message || JSON.stringify(e)))
+      .finally(() => setIsSendingTx(false));
   }
 
   if (!ethereum) return <div>MetaMask is not installed</div>;
@@ -134,8 +135,11 @@ export default function WalletContext() {
         <button onClick={onTransfer} disabled={isSendingTx}>
           Transfer
         </button>
-
-        <p>Tx Hash: {txHash}</p>
+        
+        <div>
+          {txHash === "" ? null : <p>Tx Hash: {txHash}</p>}
+        </div>
+        
       </div>
     </div>
   );
