@@ -94,24 +94,42 @@ export default function WalletContext() {
       <h3>Ethereum Address: {ethAddr}</h3>
 
       <div className="account-info">
+      <h4>PW-Lock</h4>
       <ul>
-        <li>Nervos Address(PW): {pwAddr}</li>
-        <li>
-          Current PW lock script:
-          <pre>{JSON.stringify(pwLock, null, 2)}</pre>
-        </li>
+        <li>Address: {pwAddr}</li>
         <li>Balance: {pwBalance}</li>
+        <li>
+          <details>
+          <summary>Lock script</summary>
+          <pre>{JSON.stringify(pwLock, null, 2)}</pre>
+          </details>
+        </li>
+        <li>
+          <label htmlFor="sudt">SUDT balance: </label>
+          <select id="sudt">
+            <option value="usdc">USDC 100</option>
+          </select>
+        </li>
       </ul>
       </div>
 
       <div className="account-info">
+      <h4>Omni-Lock</h4>
       <ul>
-        <li>Nervos Address(Omni): {omniAddr}</li>
-        <li>
-          Current Omni lock script:
-          <pre>{JSON.stringify(omniLock, null, 2)}</pre>
-        </li>
+        <li>Address: {omniAddr}</li>
         <li>Balance: {omniBalance}</li>
+        <li>
+          <details>
+          <summary>Lock script</summary>
+          <pre>{JSON.stringify(omniLock, null, 2)}</pre>
+          </details>
+        </li>
+        <li>
+          <label htmlFor="sudt">SUDT balance: </label>
+          <select id="sudt">
+            <option value="usdc">USDC 100</option>
+          </select>
+        </li>
       </ul>
       </div>
 
@@ -129,6 +147,10 @@ export default function WalletContext() {
         </button>
         <p>Tx Hash: {txHash}</p>
       </div> */}
+
+      <div>
+      <button>Transfer</button>
+      </div>
     </div>
   );
 }
