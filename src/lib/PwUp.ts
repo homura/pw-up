@@ -145,7 +145,7 @@ export class PwUp implements PwUpTypes {
   }
 
   async listSudtCells(address?: string | undefined): Promise<SudtCell[]> {
-    const fromScript = helpers.parseAddress(this.getPwAddress());
+    const fromScript =  helpers.parseAddress(address || this.getPwAddress());
     const collectedCells: SudtCell[] = [];
     const collector = indexer.collector({ lock: fromScript, type: {
       code_hash: CONFIG.SCRIPTS.SUDT.CODE_HASH,
@@ -167,31 +167,45 @@ export class PwUp implements PwUpTypes {
 
   async transferPwToOmni(cells: SudtCell[]): Promise<Address> {
     let tx = helpers.TransactionSkeleton({});
+    
     const fromScript = helpers.parseAddress(this.getPwAddress());
     const toScript = helpers.parseAddress(this.getOmniAddress());
+
+    console.log("transferPwToOmni", fromScript, toScript);
+
 
     const inputCells: Cell[] = cells.map((cell) => cell.cell);
     const ouputCells: Cell[] = inputCells.map((cell) => {
       return {
         ...cell,
-        lock: toScript,
+        cell_output: {
+          ...cell.cell_output,
+          lock: toScript,
+          // add 2 ckb for omni lock
+          capacity: BI.from(cell.cell_output.capacity).add(BI.from(200000000)).toHexString(),
+        }
       };
     });
 
     let payFeeFlag = false;
     // this is a example tx fee
     const txFee = BI.from(100000);
-    for (let index = 0; index < ouputCells.length; index++) {
-      const cell = ouputCells[index];
-      const minimalCapacity = helpers.minimalCellCapacity(cell);
-      if (BI.from(minimalCapacity).add(txFee).lt(BI.from(cell.cell_output.capacity))) {
-        cell.cell_output.capacity = BI.from(cell.cell_output.capacity).sub(txFee).toHexString();
-        payFeeFlag = true;
-        break;
-      }
-    }
+    const appendSudtCapacity = BI.from(200000000).mul(inputCells.length);
 
-    // pay tx fee if can't squash any ckb from sudt cells
+
+    // TODO try to extract ckb input cells for tx fee, but now it seems that ckb in input cells are not enough 
+
+    // for (let index = 0; index < ouputCells.length; index++) {
+    //   const cell = ouputCells[index];
+    //   const minimalCapacity = helpers.minimalCellCapacity(cell);
+    //   if (BI.from(minimalCapacity).add(txFee).lt(BI.from(cell.cell_output.capacity))) {
+    //     cell.cell_output.capacity = BI.from(cell.cell_output.capacity).sub(txFee).toHexString();
+    //     payFeeFlag = true;
+    //     break;
+    //   }
+    // }
+
+    // pay tx fee if can't squash any ckb from input sudt cells
     if (!payFeeFlag) {
       const dummySudtCell: Cell = {
         cell_output: {
@@ -200,7 +214,7 @@ export class PwUp implements PwUpTypes {
         },
         data: "0x",
       };
-      const needCapacity = BI.from(helpers.minimalCellCapacity(dummySudtCell)).add(txFee);
+      const needCapacity = BI.from(helpers.minimalCellCapacity(dummySudtCell)).add(txFee).add(appendSudtCapacity);
       let collectedSum = BI.from(0);
       const collector = indexer.collector({ lock: fromScript, type: "empty" });
       for await (const cell of collector.collect()) {
@@ -210,9 +224,12 @@ export class PwUp implements PwUpTypes {
           if (collectedSum.gte(needCapacity)) break;
         }
       }
+      if (collectedSum.lt(needCapacity)) {
+        throw new Error("Not enough ckb for tx fee");
+      }
       ouputCells.push({
         cell_output: {
-          capacity: collectedSum.sub(txFee).toHexString(),
+          capacity: collectedSum.sub(txFee).sub(appendSudtCapacity).toHexString(),
           lock: fromScript,
         },
         data: "0x",
@@ -238,6 +255,14 @@ export class PwUp implements PwUpTypes {
             index: CONFIG.SCRIPTS.SECP256K1_BLAKE160.INDEX,
           },
           dep_type: CONFIG.SCRIPTS.SECP256K1_BLAKE160.DEP_TYPE,
+        },
+        // sudt dep
+        {
+          out_point: {
+            tx_hash: CONFIG.SCRIPTS.SUDT.TX_HASH,
+            index: CONFIG.SCRIPTS.SUDT.INDEX,
+          },
+          dep_type: CONFIG.SCRIPTS.SUDT.DEP_TYPE,
         }
       )
     );
