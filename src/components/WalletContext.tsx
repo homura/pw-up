@@ -25,7 +25,7 @@ export default function WalletContext() {
       if (ethereum.selectedAddress) connectToMetaMask();
       ethereum.addListener("accountsChanged", connectToMetaMask);
     });
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function connectToMetaMask() {
     pwUp.connectToWallet().then(() => {
