@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "../css/WalletContext.css"
-import { asyncSleep, ethereum, pwUpConfig, PwUp } from "../lib/PwUp";
+import { asyncSleep, ethereum, PwUp } from "../lib/PwUp";
 import { SudtCell } from "../lib/PwUpTypes";
 
 export default function WalletContext() {
@@ -12,7 +12,7 @@ export default function WalletContext() {
   const [omniAddr, setOmniAddr] = useState("");
   const [omniSudtCells, setOminiSudtCells] = useState<SudtCell[]>([]);
 
-  const [pwUp, setPwUp] = useState(new PwUp(pwUpConfig));
+  const [pwUp, setPwUp] = useState(new PwUp("AGGRON4"));
 
   const [isSendingTx, setIsSendingTx] = useState(false);
   const [txHash, setTxHash] = useState("");
