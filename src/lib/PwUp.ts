@@ -24,6 +24,16 @@ const CKB_INDEXER_URL = "https://testnet.ckb.dev/indexer";
 const rpc = new RPC(CKB_RPC_URL);
 const indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
 
+export const pwUpConfig: PwUpConfig = {
+  network: "AGGRON4",
+
+  ckbRpcUrl: CKB_RPC_URL,
+  indexerRpcUrl: CKB_INDEXER_URL,
+  pwLockScriptConfig: CONFIG.SCRIPTS.PW_LOCK,
+  omniLockScriptConfig: CONFIG.SCRIPTS.PW_LOCK,
+  supportedSudts: [],
+}
+
 // prettier-ignore
 interface EthereumRpc {
     (payload: { method: 'personal_sign'; params: [string /*from*/, string /*message*/] }): Promise<string>;

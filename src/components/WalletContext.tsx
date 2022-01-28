@@ -1,26 +1,21 @@
 import React, { useEffect, useState } from "react";
 import "../css/WalletContext.css"
-import { helpers, Script } from "@ckb-lumos/lumos";
-import { asyncSleep, capacityOf, CONFIG } from "../lib/lib";
-import { EthereumProvider } from "../lib/PwUpTypes";
-
-// @ts-ignore
-const ethereum = window.ethereum as EthereumProvider;
+import { asyncSleep, ethereum, pwUpConfig, PwUp } from "../lib/PwUp";
+import { SudtCell } from "../lib/PwUpTypes";
 
 export default function WalletContext() {
   const [ethAddr, setEthAddr] = useState("");
 
   const [pwAddr, setPwAddr] = useState("");
-  const [pwBalance, setPwBalance] = useState("-");
+  const [pwSudtCells, setPwSudtCells] = useState<SudtCell[]>([]);
 
   const [omniAddr, setOmniAddr] = useState("");
-  const [omniBalance, setOmniBalance] = useState("-");
+  const [omniSudtCells, setOminiSudtCells] = useState<SudtCell[]>([]);
 
-  // const [transferAddr, setTransferAddress] = useState("");
-  // const [transferAmount, setTransferAmount] = useState("");
+  const [pwUp, setPwUp] = useState(new PwUp(pwUpConfig));
 
-  // const [isSendingTx, setIsSendingTx] = useState(false);
-  // const [txHash, setTxHash] = useState("");
+  const [isSendingTx, setIsSendingTx] = useState(false);
+  const [txHash, setTxHash] = useState("");
 
   useEffect(() => {
     asyncSleep(100).then(() => {
@@ -33,57 +28,42 @@ export default function WalletContext() {
     ethereum
       .enable()
       .then(([ethAddr]: string[]) => {
-        const pwLock: Script = {
-          code_hash: CONFIG.SCRIPTS.PW_LOCK.CODE_HASH,
-          hash_type: CONFIG.SCRIPTS.PW_LOCK.HASH_TYPE,
-          args: ethAddr
-        };
-
-        const pwAddr = helpers.generateAddress(pwLock);
-        setPwAddr(pwAddr);
-
+        pwUp.connectToWallet();
         setEthAddr(ethAddr);
+
+        const pwAddr = pwUp.getPwAddress();
+        setPwAddr(pwAddr);
 
         return pwAddr;
       })
-      .then((pwAddr) => capacityOf(pwAddr))
-      .then((balance) => {
-        setPwBalance(balance.toString());
+      .then((pwAddr) => pwUp.listSudtCells(pwAddr))
+      .then((pwSudtCells) => {
+        setPwSudtCells(pwSudtCells);
       });
 
       ethereum
       .enable()
-      .then(([ethAddr]: string[]) => {
-
-        const omniLock: Script = {
-          code_hash: CONFIG.SCRIPTS.OMNI_LOCK.CODE_HASH,
-          hash_type: CONFIG.SCRIPTS.OMNI_LOCK.HASH_TYPE,
-          // omni flag       pubkey hash   omni lock flags
-          // chain identity   eth addr      function flag()
-          // 00: Nervos       👇            00: owner
-          // 01: Ethereum     👇            01: administrator
-          //      👇          👇            👇
-          args: `0x01${ethAddr.substring(2)}00`,
-        };
-
-        const omniAddr = helpers.generateAddress(omniLock);
+      .then(() => {
+        const omniAddr = pwUp.getOmniAddress();
         setOmniAddr(omniAddr);
 
         return omniAddr;
       })
-      .then((omniAddr) => capacityOf(omniAddr))
-      .then((balance) => {
-        setOmniBalance(balance.toString());
+      .then((omniAddr) => pwUp.listSudtCells(omniAddr))
+      .then((omniSudtCells) => {
+        setOminiSudtCells(omniSudtCells);
       });
   }
 
-  // function onTransfer() {
-  //   if (isSendingTx) return;
-  //   setIsSendingTx(true);
+  function onTransfer() {
+    if (isSendingTx) return;
+    setIsSendingTx(true);
 
-  //   // transfer({amount: transferAmount, from: pwAddr, to: transferAddr})
-  //   //   .then(setTxHash);
-  // }
+    pwUp.transferPwToOmni(pwSudtCells)
+      .then(setTxHash);
+
+    // TODO: hide tx hash / refresh omnilock sudt
+  }
 
   if (!ethereum) return <div>MetaMask is not installed</div>;
   if (!ethAddr) return <button onClick={connectToMetaMask}>Connect to MetaMask</button>;
@@ -96,7 +76,6 @@ export default function WalletContext() {
       <h4>PW-Lock</h4>
       <ul>
         <li>Address: {pwAddr}</li>
-        <li>Balance: {pwBalance}</li>
         <li>
           <label htmlFor="sudt">SUDT balance: </label>
           <select id="sudt">
@@ -110,7 +89,6 @@ export default function WalletContext() {
       <h4>Omni-Lock</h4>
       <ul>
         <li>Address: {omniAddr}</li>
-        <li>Balance: {omniBalance}</li>
         <li>
           <label htmlFor="sudt">SUDT balance: </label>
           <select id="sudt">
@@ -120,23 +98,10 @@ export default function WalletContext() {
       </ul>
       </div>
 
-      {/* <div>
-        <h2>Transfer to</h2>
-        <label htmlFor="address">Address</label>&nbsp;
-        <input id="address" type="text" onChange={(e) => setTransferAddress(e.target.value)} placeholder="ckt1..."/>
-        <br/>
-        <label htmlFor="amount">Amount</label>
-        &nbsp;
-        <input id="amount" type="text" onChange={(e) => setTransferAmount(e.target.value)} placeholder="shannon"/>
-        <br/>
-        <button onClick={onTransfer} disabled={isSendingTx}>
-          Transfer
-        </button>
-        <p>Tx Hash: {txHash}</p>
-      </div> */}
-
       <div>
-      <button>Transfer</button>
+      <button  onClick={onTransfer} disabled={isSendingTx}>Transfer</button>
+      
+      <p>Tx Hash: {txHash}</p>
       </div>
     </div>
   );

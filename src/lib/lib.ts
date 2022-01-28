@@ -26,20 +26,3 @@ config.initializeConfig(CONFIG);
 const CKB_RPC_URL = "https://testnet.ckb.dev/rpc";
 const CKB_INDEXER_URL = "https://testnet.ckb.dev/indexer";
 const indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
-
-export function asyncSleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export async function capacityOf(address: string): Promise<bigint> {
-  const collector = indexer.collector({
-    lock: helpers.parseAddress(address),
-  });
-
-  let balance = 0n;
-  for await (const cell of collector.collect()) {
-    balance += BigInt(cell.cell_output.capacity);
-  }
-
-  return balance;
-}
