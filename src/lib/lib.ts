@@ -27,23 +27,6 @@ const CKB_RPC_URL = "https://testnet.ckb.dev/rpc";
 const CKB_INDEXER_URL = "https://testnet.ckb.dev/indexer";
 const indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
 
-// prettier-ignore
-interface EthereumRpc {
-    (payload: { method: 'personal_sign'; params: [string /*from*/, string /*message*/] }): Promise<string>;
-  }
-
-// prettier-ignore
-export interface EthereumProvider {
-    selectedAddress: string;
-    isMetaMask?: boolean;
-    enable: () => Promise<string[]>;
-    addListener: (event: 'accountsChanged', listener: (addresses: string[]) => void) => void;
-    removeEventListener: (event: 'accountsChanged', listener: (addresses: string[]) => void) => void;
-    request: EthereumRpc;
-  }
-// @ts-ignore
-export const ethereum = window.ethereum as EthereumProvider;
-
 export function asyncSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

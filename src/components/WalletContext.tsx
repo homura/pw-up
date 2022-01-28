@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from "react";
 import "../css/WalletContext.css"
 import { helpers, Script } from "@ckb-lumos/lumos";
-import { asyncSleep, capacityOf, CONFIG, ethereum } from "../lib/lib";
+import { asyncSleep, capacityOf, CONFIG } from "../lib/lib";
+import { EthereumProvider } from "../lib/PwUpTypes";
+
+// @ts-ignore
+const ethereum = window.ethereum as EthereumProvider;
 
 export default function WalletContext() {
   const [ethAddr, setEthAddr] = useState("");
 
   const [pwAddr, setPwAddr] = useState("");
-  const [pwLock, setPwLock] = useState<Script>();
   const [pwBalance, setPwBalance] = useState("-");
 
   const [omniAddr, setOmniAddr] = useState("");
-  const [omniLock, setOmniLock] = useState<Script>();
   const [omniBalance, setOmniBalance] = useState("-");
 
   // const [transferAddr, setTransferAddress] = useState("");
@@ -39,7 +41,6 @@ export default function WalletContext() {
 
         const pwAddr = helpers.generateAddress(pwLock);
         setPwAddr(pwAddr);
-        setPwLock(pwLock);
 
         setEthAddr(ethAddr);
 
@@ -67,8 +68,6 @@ export default function WalletContext() {
 
         const omniAddr = helpers.generateAddress(omniLock);
         setOmniAddr(omniAddr);
-        setOmniLock(omniLock);
-
 
         return omniAddr;
       })
@@ -99,12 +98,6 @@ export default function WalletContext() {
         <li>Address: {pwAddr}</li>
         <li>Balance: {pwBalance}</li>
         <li>
-          <details>
-          <summary>Lock script</summary>
-          <pre>{JSON.stringify(pwLock, null, 2)}</pre>
-          </details>
-        </li>
-        <li>
           <label htmlFor="sudt">SUDT balance: </label>
           <select id="sudt">
             <option value="usdc">USDC 100</option>
@@ -118,12 +111,6 @@ export default function WalletContext() {
       <ul>
         <li>Address: {omniAddr}</li>
         <li>Balance: {omniBalance}</li>
-        <li>
-          <details>
-          <summary>Lock script</summary>
-          <pre>{JSON.stringify(omniLock, null, 2)}</pre>
-          </details>
-        </li>
         <li>
           <label htmlFor="sudt">SUDT balance: </label>
           <select id="sudt">
