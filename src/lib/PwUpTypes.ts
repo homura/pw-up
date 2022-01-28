@@ -15,8 +15,9 @@ export interface SudtCell {
   readonly amount: BI;
 }
 
-interface PwUpConfig {
-  readonly network: "AGGRON4" | "LINA";
+export type NetworkType = "AGGRON4" | "LINA";
+export interface PwUpConfig {
+  readonly network: NetworkType;
 
   readonly ckbRpcUrl: string;
   readonly indexerRpcUrl: string;
@@ -47,6 +48,8 @@ export interface PwUpTypes {
   getEthAddress: () => Address;
   getPwAddress: () => Address;
   getOmniAddress: () => Address;
+
+  getSudtWhiteList: () => Sudt[];
 
   /**
    * defaults to connected pw-lock
