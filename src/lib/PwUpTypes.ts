@@ -15,7 +15,7 @@ export interface SudtCell {
   readonly amount: BI;
 }
 
-interface PwUpConfig {
+export interface PwUpConfig {
   readonly network: "AGGRON4" | "LINA";
 
   readonly ckbRpcUrl: string;
