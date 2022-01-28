@@ -1,3 +1,4 @@
+import { SudtCell } from './PwUpTypes';
 import { Address, BI, Cell, config, Hash, Script } from "@ckb-lumos/lumos";
 
 export interface Sudt {
@@ -15,7 +16,7 @@ export interface SudtCell {
   readonly amount: BI;
 }
 
-interface PwUpConfig {
+export interface PwUpConfig {
   readonly network: "AGGRON4" | "LINA";
 
   readonly ckbRpcUrl: string;
@@ -47,6 +48,8 @@ export interface PwUpTypes {
   getEthAddress: () => Address;
   getPwAddress: () => Address;
   getOmniAddress: () => Address;
+
+  getSudtWhiteList: () => Sudt[];
 
   /**
    * defaults to connected pw-lock
