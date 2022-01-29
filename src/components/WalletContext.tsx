@@ -20,6 +20,8 @@ export default function WalletContext() {
   const [isSendingTx, setIsSendingTx] = useState(false);
   const [txHash, setTxHash] = useState("");
 
+  const [isEditing, setIsEditing] = useState(false);
+
   useEffect(() => {
     asyncSleep(100).then(() => {
       if (ethereum.selectedAddress) connectToMetaMask();
@@ -55,8 +57,8 @@ export default function WalletContext() {
     setCheckedState(updatedCheckedState);
 
     const transSudt: SudtCell[] = [];
-    for (let i = 0; i < checkedState.length; i++) {
-      if (checkedState[i]) {
+    for (let i = 0; i < updatedCheckedState.length; i++) {
+      if (updatedCheckedState[i]) {
         transSudt.push(pwSudtCells[i]);
       }
     }
@@ -81,6 +83,15 @@ export default function WalletContext() {
       .then(setTxHash)
       .catch((e) => alert(e.message || JSON.stringify(e)))
       .finally(() => setIsSendingTx(false));
+  }
+
+  function editState() {
+    setIsEditing(!isEditing);
+  }
+
+  // @ts-ignore
+  function changeTargetAddr(event) {
+    setOmniAddr(event.target.value);
   }
 
   if (!ethereum) return <div>MetaMask is not installed</div>;
@@ -115,9 +126,19 @@ export default function WalletContext() {
       </div>
 
       <div className="account-info">
-        <h4>Omni-Lock</h4>
+        <h4>Target Address(Omni-Lock default)</h4>
         <ul>
-          <li>Address: {omniAddr}</li>
+          
+          <li>
+            Address:{" "}
+            {isEditing ? (
+              /* @ts-ignore */
+              <input type="text" value={omniAddr} onChange={changeTargetAddr.bind(this)} />
+            ) : (
+              <span>{omniAddr}</span>
+            )}{" "}
+            <button onClick={editState}>{isEditing ? <span>save</span> : <span>edit</span>}</button>
+          </li>
           <li>
             SudtCells:
             <ul>
@@ -133,13 +154,10 @@ export default function WalletContext() {
 
       <div>
         <button onClick={onTransfer} disabled={isSendingTx}>
-          Transfer
+          =&gt;
         </button>
-        
-        <div>
-          {txHash === "" ? null : <p>Tx Hash: {txHash}</p>}
-        </div>
-        
+
+        <div>{txHash === "" ? null : <p>Tx Hash: {txHash}</p>}</div>
       </div>
     </div>
   );
