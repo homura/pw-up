@@ -4,7 +4,7 @@ import { Address, BI, Cell, config, core, helpers, Indexer, RPC, Script, toolkit
 import { default as createKeccak } from "keccak";
 import { debug } from "./debug";
 
-export const CONFIG = config.createConfig({
+export const CONFIG_TESTNET = config.createConfig({
   PREFIX: "ckt",
   SCRIPTS: {
     ...config.predefined.AGGRON4.SCRIPTS,
@@ -26,30 +26,54 @@ export const CONFIG = config.createConfig({
   },
 });
 
-config.initializeConfig(CONFIG);
+export const CONFIG_MAINNET = config.createConfig({
+  PREFIX: "ckb",
+  SCRIPTS: {
+    ...config.predefined.LINA.SCRIPTS,
+    // https://github.com/lay2dev/pw-core/blob/861310b3dd8638f668db1a08d4c627db4c34d815/src/constants.ts#L71-L84
+    PW_LOCK: {
+      CODE_HASH: "0xbf43c3602455798c1a61a596e0d95278864c552fafe231c063b3fabf97a8febc",
+      HASH_TYPE: "type",
+      TX_HASH: "0x1d60cb8f4666e039f418ea94730b1a8c5aa0bf2f7781474406387462924d15d4",
+      INDEX: "0x0",
+      DEP_TYPE: "code",
+    },
+    OMNI_LOCK: {
+      CODE_HASH: "0x9f3aeaf2fc439549cbc870c653374943af96a0658bd6b51be8d8983183e6f52f",
+      HASH_TYPE: "type",
+      TX_HASH: "0xaa8ab7e97ed6a268be5d7e26d63d115fa77230e51ae437fc532988dd0c3ce10a",
+      INDEX: "0x1",
+      DEP_TYPE: "code",
+    },
+  },
+});
 
-const CKB_RPC_URL = "https://testnet.ckb.dev/rpc";
-const CKB_INDEXER_URL = "https://testnet.ckb.dev/indexer";
-const rpc = new RPC(CKB_RPC_URL);
-const indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
+let CONFIG = CONFIG_TESTNET;
+let CKB_RPC_URL = "https://testnet.ckb.dev/rpc";
+let CKB_INDEXER_URL = "https://testnet.ckb.dev/indexer";
+let rpc = new RPC(CKB_RPC_URL);
+let indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
 
-// prettier-ignore
 interface EthereumRpc {
-    (payload: { method: 'personal_sign'; params: [string /*from*/, string /*message*/] }): Promise<string>;
+  (payload: { method: "personal_sign"; params: [string /*from*/, string /*message*/] }): Promise<string>;
 }
 
-// prettier-ignore
 export interface EthereumProvider {
-    selectedAddress: string;
-    isMetaMask?: boolean;
-    enable: () => Promise<string[]>;
-    addListener: (event: 'accountsChanged', listener: (addresses: string[]) => void) => void;
-    removeEventListener: (event: 'accountsChanged', listener: (addresses: string[]) => void) => void;
-    request: EthereumRpc;
+  selectedAddress: string;
+  isMetaMask?: boolean;
+  enable: () => Promise<string[]>;
+  addListener: (event: "accountsChanged", listener: (addresses: string[]) => void) => void;
+  removeEventListener: (event: "accountsChanged", listener: (addresses: string[]) => void) => void;
+  request: EthereumRpc;
 }
 
-// @ts-ignore
-export const ethereum = window.ethereum as EthereumProvider;
+declare global {
+  interface Window {
+    ethereum?: EthereumProvider;
+  }
+}
+
+export let ethereum = window.ethereum!;
 
 export function asyncSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -73,10 +97,29 @@ type Mutable<T> = {
 
 export class PwUp implements PwUpTypes {
   config: PwUpConfig;
-  isConnected: boolean;
+  isConnected = false;
 
   constructor(network: NetworkType) {
-    this.isConnected = false;
+    if (network === "LINA") {
+      config.initializeConfig(CONFIG_MAINNET);
+
+      CONFIG = CONFIG_MAINNET;
+      CKB_RPC_URL = "https://testnet.ckb.dev/rpc";
+      CKB_INDEXER_URL = "https://testnet.ckb.dev/indexer";
+      rpc = new RPC(CKB_RPC_URL);
+      indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
+    } else if (network === "AGGRON4") {
+      config.initializeConfig(CONFIG_TESTNET);
+
+      CONFIG = CONFIG_TESTNET;
+      CKB_RPC_URL = "https://mainnet.ckb.dev/rpc";
+      CKB_INDEXER_URL = "https://mainnet.ckb.dev/indexer";
+      rpc = new RPC(CKB_RPC_URL);
+      indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
+    } else {
+      throw new Error("unknown network type: " + network);
+    }
+
     if (network === "AGGRON4") {
       this.config = {
         network: "AGGRON4",
@@ -101,6 +144,14 @@ export class PwUp implements PwUpTypes {
   }
 
   async connectToWallet(): Promise<void> {
+    // wait 300ms for ethereum provider to be ready
+    if (!ethereum) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    if (!window.ethereum) throw new Error("No ethereum provider found");
+
+    ethereum = window.ethereum;
+
     ethereum.enable().then(([ethAddr]: string[]) => {
       this.isConnected = true;
       console.log("Connected to wallet", ethAddr);
@@ -182,6 +233,10 @@ export class PwUp implements PwUpTypes {
 
     const fromScript = helpers.parseAddress(this.getPwAddress());
     const toScript = helpers.parseAddress(targetLock);
+
+    if (toScript.code_hash !== CONFIG.SCRIPTS.OMNI_LOCK.CODE_HASH) {
+      throw new Error("Now only support transfer to a Omni-lock");
+    }
 
     debug("from script", fromScript);
     debug("to script", toScript);
