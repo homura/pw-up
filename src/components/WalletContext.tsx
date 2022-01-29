@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
 import "../css/WalletContext.css";
 import { asyncSleep, ethereum, PwUp } from "../lib/PwUp";
-import { SudtCell } from "../lib/PwUpTypes";
+import { SudtGroup } from "../lib/PwUpTypes";
 
 export default function WalletContext() {
   const [ethAddr, setEthAddr] = useState("");
 
   const [pwAddr, setPwAddr] = useState("");
-  const [pwSudtCells, setPwSudtCells] = useState<SudtCell[]>([]);
+  const [pwSudtCells, setPwSudtCells] = useState<SudtGroup[]>([]);
 
   const [omniAddr, setOmniAddr] = useState("");
-  const [omniSudtCells, setOminiSudtCells] = useState<SudtCell[]>([]);
+  const [omniSudtCells, setOminiSudtCells] = useState<SudtGroup[]>([]);
 
-  const [transSudtCells, setTransSudtCells] = useState<SudtCell[]>([]);
+  const [transSudtCells, setTransSudtCells] = useState<SudtGroup[]>([]);
   const [checkedState, setCheckedState] = useState<boolean[]>([]);
 
   const [pwUp, setPwUp] = useState(new PwUp("AGGRON4"));
@@ -54,7 +54,7 @@ export default function WalletContext() {
 
     setCheckedState(updatedCheckedState);
 
-    const transSudt: SudtCell[] = [];
+    const transSudt: SudtGroup[] = [];
     for (let i = 0; i < checkedState.length; i++) {
       if (checkedState[i]) {
         transSudt.push(pwSudtCells[i]);
@@ -135,11 +135,8 @@ export default function WalletContext() {
         <button onClick={onTransfer} disabled={isSendingTx}>
           Transfer
         </button>
-        
-        <div>
-          {txHash === "" ? null : <p>Tx Hash: {txHash}</p>}
-        </div>
-        
+
+        <div>{txHash === "" ? null : <p>Tx Hash: {txHash}</p>}</div>
       </div>
     </div>
   );
