@@ -2,6 +2,7 @@ import { SUDT_WHITE_LIST } from "./tokenList";
 import { NetworkType, PwUpConfig, PwUpTypes, Sudt, SudtGroup } from "./PwUpTypes";
 import { Address, BI, Cell, config, core, helpers, Indexer, RPC, Script, toolkit, utils } from "@ckb-lumos/lumos";
 import { default as createKeccak } from "keccak";
+import { debug } from "./debug";
 
 export const CONFIG = config.createConfig({
   PREFIX: "ckt",
@@ -73,6 +74,7 @@ type Mutable<T> = {
 export class PwUp implements PwUpTypes {
   config: PwUpConfig;
   isConnected: boolean;
+
   constructor(network: NetworkType) {
     this.isConnected = false;
     if (network === "AGGRON4") {
@@ -174,13 +176,15 @@ export class PwUp implements PwUpTypes {
     return Array.from(groups.values());
   }
 
-  async transferPwToOmni(groups: SudtGroup[]): Promise<Address> {
+  async transferPwToOmni(groups: SudtGroup[], targetLock = this.getOmniAddress()): Promise<Address> {
     let tx = helpers.TransactionSkeleton({});
+    debug("transfer target", targetLock);
 
     const fromScript = helpers.parseAddress(this.getPwAddress());
-    const toScript = helpers.parseAddress(this.getOmniAddress());
+    const toScript = helpers.parseAddress(targetLock);
 
-    console.log("transferPwToOmni", fromScript, toScript);
+    debug("from script", fromScript);
+    debug("to script", toScript);
 
     const inputCells: Cell[] = groups.flatMap((group) => group.cells);
     const ouputCells: Cell[] = inputCells.map((cell) => {

@@ -81,7 +81,7 @@ export default function WalletContext() {
     console.log(transSudtCells);
 
     pwUp
-      .transferPwToOmni(transSudtCells)
+      .transferPwToOmni(transSudtCells, inputVal)
       .then(setTxHash)
       .catch((e) => alert(e.message || JSON.stringify(e)))
       .finally(() => setIsSendingTx(false));
@@ -91,87 +91,95 @@ export default function WalletContext() {
     if (isEditing) {
       const addr = omniAddr;
       setOmniAddr(inputVal);
-      pwUp.listSudtCells(inputVal).then((cells) => {
-        setOminiSudtCells(cells);
-      }).catch((e) => {
-        alert(e.message || JSON.stringify(e));
-        setOmniAddr(addr);
-        setInputVal(addr);
-      });
-      
+      pwUp
+        .listSudtCells(inputVal)
+        .then((cells) => {
+          setOminiSudtCells(cells);
+        })
+        .catch((e) => {
+          alert(e.message || JSON.stringify(e));
+          setOmniAddr(addr);
+          setInputVal(addr);
+        });
     }
     setIsEditing(!isEditing);
   }
 
   // @ts-ignore
   function changeTargetAddr(event) {
-    const targetAddr = event.target.value
+    const targetAddr = event.target.value;
     setInputVal(targetAddr);
   }
 
   if (!ethereum) return <div>MetaMask is not installed</div>;
-  if (!ethAddr) return <button className="button is-info" onClick={connectToMetaMask}>Connect to MetaMask</button>;
+  if (!ethAddr)
+    return (
+      <button className="button is-info" onClick={connectToMetaMask}>
+        Connect to MetaMask
+      </button>
+    );
 
   return (
-    <div style={{marginTop: 20}}>
-      <h3 className="title is-4" >Ethereum Address: {ethAddr}</h3>
+    <div style={{ marginTop: 20 }}>
+      <h3 className="title is-4">Ethereum Address: {ethAddr}</h3>
 
       {/* @ts-ignore */}
       <div onChange={switchNet.bind(this)}>
-      <label className="radio">
-        <input type="radio" value="AGGRON4" defaultChecked name="net" /> AGGRON4
+        <label className="radio">
+          <input type="radio" value="AGGRON4" defaultChecked name="net" /> AGGRON4
         </label>
         <label className="radio">
-        <input type="radio" value="LINA" name="net" /> LINA
+          <input type="radio" value="LINA" name="net" /> LINA
         </label>
       </div>
 
       <div id="account-info" className="box">
         <div className="content">
-        <h4>PW-Lock</h4>
-        <ul>
-          <li>Address: {pwAddr}</li>
-          <li>
-            SudtCells:
-            {pwSudtCells.map((pwSudtCell, i) => (
-              <p key={i}>
-                <input type="checkbox" id="i" value="i" defaultChecked={true} onChange={() => handleOnChange(i)} />
-                <label htmlFor="i">
-                  {pwSudtCell.sudt.name}, {pwSudtCell.amount.toString()}
-                </label>
-              </p>
-            ))}
-          </li>
-        </ul>
+          <h4>PW-Lock</h4>
+          <ul>
+            <li>Address: {pwAddr}</li>
+            <li>
+              SudtCells:
+              {pwSudtCells.map((pwSudtCell, i) => (
+                <p key={i}>
+                  <input type="checkbox" id="i" value="i" defaultChecked={true} onChange={() => handleOnChange(i)} />
+                  <label htmlFor="i">
+                    {pwSudtCell.sudt.name}, {pwSudtCell.amount.toString()}
+                  </label>
+                </p>
+              ))}
+            </li>
+          </ul>
         </div>
       </div>
 
       <div id="account-info" className="box">
-      <div className="content">
-        <h4>Target Address(Omni-Lock default)</h4>
-        <ul>
-          
-          <li>
-            Address:{" "}
-            {isEditing ? (
-              /* @ts-ignore */
-              <input className="input is-info" type="text" value={inputVal} onChange={changeTargetAddr.bind(this)} />
-            ) : (
-              <span>{omniAddr}</span>
-            )}{" "}
-            <button className="button is-info is-inverted is-small is-rounded" onClick={editState}>{isEditing ? <span>save</span> : <span>edit</span>}</button>
-          </li>
-          <li>
-            SudtCells:
-            <ul>
-              {omniSudtCells.map((omniSudtCell, i) => (
-                <li key={i}>
-                  {omniSudtCell.sudt.name}, {omniSudtCell.amount.toString()}
-                </li>
-              ))}
-            </ul>
-          </li>
-        </ul>
+        <div className="content">
+          <h4>Target Address(Omni-Lock default)</h4>
+          <ul>
+            <li>
+              Address:{" "}
+              {isEditing ? (
+                /* @ts-ignore */
+                <input className="input is-info" type="text" value={inputVal} onChange={changeTargetAddr.bind(this)} />
+              ) : (
+                <span>{omniAddr}</span>
+              )}{" "}
+              <button className="button is-info is-inverted is-small is-rounded" onClick={editState}>
+                {isEditing ? <span>save</span> : <span>edit</span>}
+              </button>
+            </li>
+            <li>
+              SudtCells:
+              <ul>
+                {omniSudtCells.map((omniSudtCell, i) => (
+                  <li key={i}>
+                    {omniSudtCell.sudt.name}, {omniSudtCell.amount.toString()}
+                  </li>
+                ))}
+              </ul>
+            </li>
+          </ul>
         </div>
       </div>
 
