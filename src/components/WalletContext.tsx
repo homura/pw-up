@@ -1,90 +1,87 @@
 import React, { useEffect, useState } from "react";
-import "../css/WalletContext.css"
-import { helpers, Script } from "@ckb-lumos/lumos";
-import { asyncSleep, capacityOf, CONFIG, ethereum } from "../lib/lib";
+import "../css/WalletContext.css";
+import { asyncSleep, ethereum, PwUp } from "../lib/PwUp";
+import { SudtCell } from "../lib/PwUpTypes";
 
 export default function WalletContext() {
   const [ethAddr, setEthAddr] = useState("");
 
   const [pwAddr, setPwAddr] = useState("");
-  const [pwLock, setPwLock] = useState<Script>();
-  const [pwBalance, setPwBalance] = useState("-");
+  const [pwSudtCells, setPwSudtCells] = useState<SudtCell[]>([]);
 
   const [omniAddr, setOmniAddr] = useState("");
-  const [omniLock, setOmniLock] = useState<Script>();
-  const [omniBalance, setOmniBalance] = useState("-");
+  const [omniSudtCells, setOminiSudtCells] = useState<SudtCell[]>([]);
 
-  // const [transferAddr, setTransferAddress] = useState("");
-  // const [transferAmount, setTransferAmount] = useState("");
+  const [transSudtCells, setTransSudtCells] = useState<SudtCell[]>([]);
+  const [checkedState, setCheckedState] = useState<boolean[]>([]);
 
-  // const [isSendingTx, setIsSendingTx] = useState(false);
-  // const [txHash, setTxHash] = useState("");
+  const [pwUp, setPwUp] = useState(new PwUp("AGGRON4"));
+
+  const [isSendingTx, setIsSendingTx] = useState(false);
+  const [txHash, setTxHash] = useState("");
 
   useEffect(() => {
     asyncSleep(100).then(() => {
       if (ethereum.selectedAddress) connectToMetaMask();
       ethereum.addListener("accountsChanged", connectToMetaMask);
     });
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function connectToMetaMask() {
-    ethereum
-      .enable()
-      .then(([ethAddr]: string[]) => {
-        const pwLock: Script = {
-          code_hash: CONFIG.SCRIPTS.PW_LOCK.CODE_HASH,
-          hash_type: CONFIG.SCRIPTS.PW_LOCK.HASH_TYPE,
-          args: ethAddr
-        };
+    pwUp.connectToWallet().then(() => {
+      const ethAddr = pwUp.getEthAddress();
+      setEthAddr(ethAddr);
 
-        const pwAddr = helpers.generateAddress(pwLock);
-        setPwAddr(pwAddr);
-        setPwLock(pwLock);
+      const pwAddr = pwUp.getPwAddress();
+      setPwAddr(pwAddr);
+      const omniAddr = pwUp.getOmniAddress();
+      setOmniAddr(omniAddr);
 
-        setEthAddr(ethAddr);
-
-        return pwAddr;
-      })
-      .then((pwAddr) => capacityOf(pwAddr))
-      .then((balance) => {
-        setPwBalance(balance.toString());
+      pwUp.listSudtCells().then((cells) => {
+        setPwSudtCells(cells);
+        setTransSudtCells(cells);
+        setCheckedState(new Array(cells.length).fill(true));
       });
 
-      ethereum
-      .enable()
-      .then(([ethAddr]: string[]) => {
-
-        const omniLock: Script = {
-          code_hash: CONFIG.SCRIPTS.OMNI_LOCK.CODE_HASH,
-          hash_type: CONFIG.SCRIPTS.OMNI_LOCK.HASH_TYPE,
-          // omni flag       pubkey hash   omni lock flags
-          // chain identity   eth addr      function flag()
-          // 00: Nervos       👇            00: owner
-          // 01: Ethereum     👇            01: administrator
-          //      👇          👇            👇
-          args: `0x01${ethAddr.substring(2)}00`,
-        };
-
-        const omniAddr = helpers.generateAddress(omniLock);
-        setOmniAddr(omniAddr);
-        setOmniLock(omniLock);
-
-
-        return omniAddr;
-      })
-      .then((omniAddr) => capacityOf(omniAddr))
-      .then((balance) => {
-        setOmniBalance(balance.toString());
+      pwUp.listSudtCells(omniAddr).then((cells) => {
+        setOminiSudtCells(cells);
       });
+    });
   }
 
-  // function onTransfer() {
-  //   if (isSendingTx) return;
-  //   setIsSendingTx(true);
+  function handleOnChange(position: number) {
+    const updatedCheckedState = checkedState.map((item, index) => (index === position ? !item : item));
 
-  //   // transfer({amount: transferAmount, from: pwAddr, to: transferAddr})
-  //   //   .then(setTxHash);
-  // }
+    setCheckedState(updatedCheckedState);
+
+    const transSudt: SudtCell[] = [];
+    for (let i = 0; i < checkedState.length; i++) {
+      if (checkedState[i]) {
+        transSudt.push(pwSudtCells[i]);
+      }
+    }
+
+    setTransSudtCells(transSudt);
+  }
+
+  // @ts-ignore
+  function switchNet(event) {
+    setPwUp(new PwUp(event.target.value));
+    connectToMetaMask();
+  }
+
+  function onTransfer() {
+    if (isSendingTx) return;
+    setIsSendingTx(true);
+
+    console.log(transSudtCells);
+
+    pwUp
+      .transferPwToOmni(transSudtCells)
+      .then(setTxHash)
+      .catch((e) => alert(e.message || JSON.stringify(e)))
+      .finally(() => setIsSendingTx(false));
+  }
 
   if (!ethereum) return <div>MetaMask is not installed</div>;
   if (!ethAddr) return <button onClick={connectToMetaMask}>Connect to MetaMask</button>;
@@ -93,42 +90,57 @@ export default function WalletContext() {
     <div>
       <h3>Ethereum Address: {ethAddr}</h3>
 
-      <div className="account-info">
-      <ul>
-        <li>Nervos Address(PW): {pwAddr}</li>
-        <li>
-          Current PW lock script:
-          <pre>{JSON.stringify(pwLock, null, 2)}</pre>
-        </li>
-        <li>Balance: {pwBalance}</li>
-      </ul>
+      {/* @ts-ignore */}
+      <div onChange={switchNet.bind(this)}>
+        <input type="radio" value="AGGRON4" defaultChecked name="net" /> AGGRON4
+        <input type="radio" value="LINA" name="net" /> LINA
       </div>
 
       <div className="account-info">
-      <ul>
-        <li>Nervos Address(Omni): {omniAddr}</li>
-        <li>
-          Current Omni lock script:
-          <pre>{JSON.stringify(omniLock, null, 2)}</pre>
-        </li>
-        <li>Balance: {omniBalance}</li>
-      </ul>
+        <h4>PW-Lock</h4>
+        <ul>
+          <li>Address: {pwAddr}</li>
+          <li>
+            SudtCells:
+            {pwSudtCells.map((pwSudtCell, i) => (
+              <p key={i}>
+                <input type="checkbox" id="i" value="i" defaultChecked={true} onChange={() => handleOnChange(i)} />
+                <label htmlFor="i">
+                  {pwSudtCell.sudt.name}, {pwSudtCell.amount.toString()}
+                </label>
+              </p>
+            ))}
+          </li>
+        </ul>
       </div>
 
-      {/* <div>
-        <h2>Transfer to</h2>
-        <label htmlFor="address">Address</label>&nbsp;
-        <input id="address" type="text" onChange={(e) => setTransferAddress(e.target.value)} placeholder="ckt1..."/>
-        <br/>
-        <label htmlFor="amount">Amount</label>
-        &nbsp;
-        <input id="amount" type="text" onChange={(e) => setTransferAmount(e.target.value)} placeholder="shannon"/>
-        <br/>
+      <div className="account-info">
+        <h4>Omni-Lock</h4>
+        <ul>
+          <li>Address: {omniAddr}</li>
+          <li>
+            SudtCells:
+            <ul>
+              {omniSudtCells.map((omniSudtCell, i) => (
+                <li key={i}>
+                  {omniSudtCell.sudt.name}, {omniSudtCell.amount.toString()}
+                </li>
+              ))}
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div>
         <button onClick={onTransfer} disabled={isSendingTx}>
           Transfer
         </button>
-        <p>Tx Hash: {txHash}</p>
-      </div> */}
+        
+        <div>
+          {txHash === "" ? null : <p>Tx Hash: {txHash}</p>}
+        </div>
+        
+      </div>
     </div>
   );
 }

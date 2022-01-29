@@ -2,5 +2,7 @@
   width: 40%;
   display: inline-block;
   word-wrap: break-word;
-  padding: 20px;
+  padding: 25px;
+  text-align: left;
+  vertical-align: top;
 }
