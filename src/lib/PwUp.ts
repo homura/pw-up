@@ -328,4 +328,13 @@ export class PwUp implements PwUpTypes {
 
     return txHash;
   }
+
+  checkAddress(address: Address): boolean {
+    try {
+      helpers.parseAddress(address);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }

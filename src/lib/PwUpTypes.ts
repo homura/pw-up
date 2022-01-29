@@ -50,6 +50,12 @@ export interface PwUpTypes {
   getPwAddress: () => Address;
   getOmniAddress: () => Address;
 
+  /**
+   * check if an input address is a valid ckb address
+   * @param address
+   */
+  checkAddress: (address: Address) => boolean;
+
   getSudtWhiteList: () => Sudt[];
 
   /**
