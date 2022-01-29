@@ -16,6 +16,7 @@ export interface SudtGroup {
 }
 
 export type NetworkType = "AGGRON4" | "LINA";
+
 export interface PwUpConfig {
   readonly network: NetworkType;
 
@@ -59,5 +60,5 @@ export interface PwUpTypes {
   listSudtCells: (address?: Address) => Promise<SudtGroup[]>;
 
   // send a transaction to transfer from PW-lock to Omni-lock
-  transferPwToOmni: (cells: SudtGroup[]) => Promise<Hash>;
+  transferPwToOmni: (cells: SudtGroup[], recipientLock: Address) => Promise<Hash>;
 }
