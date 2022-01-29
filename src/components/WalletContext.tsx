@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
 import "../css/WalletContext.css";
 import { asyncSleep, ethereum, PwUp } from "../lib/PwUp";
-import { SudtCell } from "../lib/PwUpTypes";
+import { SudtGroup } from "../lib/PwUpTypes";
 
 export default function WalletContext() {
   const [ethAddr, setEthAddr] = useState("");
 
   const [pwAddr, setPwAddr] = useState("");
-  const [pwSudtCells, setPwSudtCells] = useState<SudtCell[]>([]);
+  const [pwSudtCells, setPwSudtCells] = useState<SudtGroup[]>([]);
 
   const [omniAddr, setOmniAddr] = useState("");
-  const [omniSudtCells, setOminiSudtCells] = useState<SudtCell[]>([]);
+  const [omniSudtCells, setOminiSudtCells] = useState<SudtGroup[]>([]);
 
-  const [transSudtCells, setTransSudtCells] = useState<SudtCell[]>([]);
+  const [transSudtCells, setTransSudtCells] = useState<SudtGroup[]>([]);
   const [checkedState, setCheckedState] = useState<boolean[]>([]);
 
   const [pwUp, setPwUp] = useState(new PwUp("AGGRON4"));
@@ -21,6 +21,7 @@ export default function WalletContext() {
   const [txHash, setTxHash] = useState("");
 
   const [isEditing, setIsEditing] = useState(false);
+  const [inputVal, setInputVal] = useState("");
 
   useEffect(() => {
     asyncSleep(100).then(() => {
@@ -38,6 +39,7 @@ export default function WalletContext() {
       setPwAddr(pwAddr);
       const omniAddr = pwUp.getOmniAddress();
       setOmniAddr(omniAddr);
+      setInputVal(omniAddr);
 
       pwUp.listSudtCells().then((cells) => {
         setPwSudtCells(cells);
@@ -56,9 +58,9 @@ export default function WalletContext() {
 
     setCheckedState(updatedCheckedState);
 
-    const transSudt: SudtCell[] = [];
-    for (let i = 0; i < updatedCheckedState.length; i++) {
-      if (updatedCheckedState[i]) {
+    const transSudt: SudtGroup[] = [];
+    for (let i = 0; i < checkedState.length; i++) {
+      if (checkedState[i]) {
         transSudt.push(pwSudtCells[i]);
       }
     }
@@ -86,13 +88,25 @@ export default function WalletContext() {
   }
 
   function editState() {
+    if (isEditing) {
+      const addr = omniAddr;
+      setOmniAddr(inputVal);
+      pwUp.listSudtCells(inputVal).then((cells) => {
+        setOminiSudtCells(cells);
+      }).catch((e) => {
+        alert(e.message || JSON.stringify(e));
+        setOmniAddr(addr);
+        setInputVal(addr);
+      });
+      
+    }
     setIsEditing(!isEditing);
   }
 
   // @ts-ignore
   function changeTargetAddr(event) {
-    setOmniAddr(event.target.value);
-    // TODO: SET OTHERS
+    const targetAddr = event.target.value
+    setInputVal(targetAddr);
   }
 
   if (!ethereum) return <div>MetaMask is not installed</div>;
@@ -141,7 +155,7 @@ export default function WalletContext() {
             Address:{" "}
             {isEditing ? (
               /* @ts-ignore */
-              <input className="input is-info" type="text" value={omniAddr} onChange={changeTargetAddr.bind(this)} />
+              <input className="input is-info" type="text" value={inputVal} onChange={changeTargetAddr.bind(this)} />
             ) : (
               <span>{omniAddr}</span>
             )}{" "}

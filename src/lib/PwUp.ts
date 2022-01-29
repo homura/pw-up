@@ -1,6 +1,6 @@
 import { SUDT_WHITE_LIST } from "./tokenList";
-import { NetworkType, PwUpConfig, PwUpTypes, Sudt, SudtCell } from "./PwUpTypes";
-import { BI, Cell, config, core, helpers, Indexer, RPC, toolkit, utils, Address, Script } from "@ckb-lumos/lumos";
+import { NetworkType, PwUpConfig, PwUpTypes, Sudt, SudtGroup } from "./PwUpTypes";
+import { Address, BI, Cell, config, core, helpers, Indexer, RPC, Script, toolkit, utils } from "@ckb-lumos/lumos";
 import { default as createKeccak } from "keccak";
 
 export const CONFIG = config.createConfig({
@@ -58,15 +58,17 @@ function findCellSudt(cell: Cell, whiteList: Sudt[]): Sudt | undefined {
   if (cell.cell_output.type) {
     for (let index = 0; index < whiteList.length; index++) {
       const sudt = whiteList[index];
-      if (
-        sudt.type.args === cell.cell_output.type!.args
-      ) {
+      if (sudt.type.args === cell.cell_output.type!.args) {
         return sudt;
       }
     }
   }
   return undefined;
 }
+
+type Mutable<T> = {
+  -readonly [k in keyof T]: T[k];
+};
 
 export class PwUp implements PwUpTypes {
   config: PwUpConfig;
@@ -97,18 +99,16 @@ export class PwUp implements PwUpTypes {
   }
 
   async connectToWallet(): Promise<void> {
-    ethereum
-      .enable()
-      .then(([ethAddr]: string[]) => {
-        this.isConnected = true;
-        console.log("Connected to wallet", ethAddr);
-      })
+    ethereum.enable().then(([ethAddr]: string[]) => {
+      this.isConnected = true;
+      console.log("Connected to wallet", ethAddr);
+    });
   }
 
   getEthAddress(): Address {
-    if( ethereum && ethereum.selectedAddress ) {
+    if (ethereum && ethereum.selectedAddress) {
       return ethereum.selectedAddress;
-    } else{
+    } else {
       throw new Error("Please connect wallet first");
     }
   }
@@ -144,37 +144,45 @@ export class PwUp implements PwUpTypes {
     return this.config.supportedSudts || SUDT_WHITE_LIST;
   }
 
-  async listSudtCells(address?: string | undefined): Promise<SudtCell[]> {
-    const fromScript =  helpers.parseAddress(address || this.getPwAddress());
-    const collectedCells: SudtCell[] = [];
-    const collector = indexer.collector({ lock: fromScript, type: {
-      code_hash: CONFIG.SCRIPTS.SUDT.CODE_HASH,
-      hash_type: CONFIG.SCRIPTS.SUDT.HASH_TYPE,
-      args: "0x"
-    } });
+  async listSudtCells(address?: string | undefined): Promise<SudtGroup[]> {
+    const fromScript = helpers.parseAddress(address || this.getPwAddress());
+    const collector = indexer.collector({
+      lock: fromScript,
+      type: {
+        code_hash: CONFIG.SCRIPTS.SUDT.CODE_HASH,
+        hash_type: CONFIG.SCRIPTS.SUDT.HASH_TYPE,
+        args: "0x",
+      },
+    });
+
+    const groups: Map<string, Mutable<SudtGroup>> = new Map();
+
     for await (const cell of collector.collect()) {
       const result = findCellSudt(cell, this.getSudtWhiteList());
       if (result) {
-        collectedCells.push({
-          sudt: result as Sudt,
-          cell,
-          amount: BI.from(utils.readBigUInt128LE(cell.data)),
-        });
+        if (!groups.has(result.type.args)) {
+          groups.set(result.type.args, { cells: [], sudt: result, amount: BI.from(0) });
+        }
+
+        const group = groups.get(result.type.args);
+        if (!group) throw new Error("Impossible error");
+
+        group.cells.push(cell);
+        group.amount = group.amount.add(BI.from(utils.readBigUInt128LE(cell.data)));
       }
     }
-    return collectedCells
+    return Array.from(groups.values());
   }
 
-  async transferPwToOmni(cells: SudtCell[]): Promise<Address> {
+  async transferPwToOmni(groups: SudtGroup[]): Promise<Address> {
     let tx = helpers.TransactionSkeleton({});
-    
+
     const fromScript = helpers.parseAddress(this.getPwAddress());
     const toScript = helpers.parseAddress(this.getOmniAddress());
 
     console.log("transferPwToOmni", fromScript, toScript);
 
-
-    const inputCells: Cell[] = cells.map((cell) => cell.cell);
+    const inputCells: Cell[] = groups.flatMap((group) => group.cells);
     const ouputCells: Cell[] = inputCells.map((cell) => {
       return {
         ...cell,
@@ -183,7 +191,7 @@ export class PwUp implements PwUpTypes {
           lock: toScript,
           // add 2 ckb for omni lock
           capacity: BI.from(cell.cell_output.capacity).add(BI.from(200000000)).toHexString(),
-        }
+        },
       };
     });
 
@@ -192,8 +200,7 @@ export class PwUp implements PwUpTypes {
     const txFee = BI.from(100000);
     const appendSudtCapacity = BI.from(200000000).mul(inputCells.length);
 
-
-    // TODO try to extract ckb input cells for tx fee, but now it seems that ckb in input cells are not enough 
+    // TODO try to extract ckb input cells for tx fee, but now it seems that ckb in input cells are not enough
 
     // for (let index = 0; index < ouputCells.length; index++) {
     //   const cell = ouputCells[index];

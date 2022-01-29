@@ -7,9 +7,9 @@ export interface Sudt {
   readonly decimals: number;
 }
 
-export interface SudtCell {
+export interface SudtGroup {
   readonly sudt: Sudt;
-  readonly cell: Cell;
+  readonly cells: Cell[];
 
   // amount without decimals
   readonly amount: BI;
@@ -56,8 +56,8 @@ export interface PwUpTypes {
    * the sudt list can be found in {@link PwUpConfig.supportedSudts}
    * @param address
    */
-  listSudtCells: (address?: Address) => Promise<SudtCell[]>;
+  listSudtCells: (address?: Address) => Promise<SudtGroup[]>;
 
   // send a transaction to transfer from PW-lock to Omni-lock
-  transferPwToOmni: (cells: SudtCell[]) => Promise<Hash>;
+  transferPwToOmni: (cells: SudtGroup[]) => Promise<Hash>;
 }
