@@ -20,6 +20,9 @@ export default function WalletContext() {
   const [isSendingTx, setIsSendingTx] = useState(false);
   const [txHash, setTxHash] = useState("");
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputVal, setInputVal] = useState("");
+
   useEffect(() => {
     asyncSleep(100).then(() => {
       if (ethereum.selectedAddress) connectToMetaMask();
@@ -36,6 +39,7 @@ export default function WalletContext() {
       setPwAddr(pwAddr);
       const omniAddr = pwUp.getOmniAddress();
       setOmniAddr(omniAddr);
+      setInputVal(omniAddr);
 
       pwUp.listSudtCells().then((cells) => {
         setPwSudtCells(cells);
@@ -83,20 +87,47 @@ export default function WalletContext() {
       .finally(() => setIsSendingTx(false));
   }
 
+  function editState() {
+    if (isEditing) {
+      const addr = omniAddr;
+      setOmniAddr(inputVal);
+      pwUp.listSudtCells(inputVal).then((cells) => {
+        setOminiSudtCells(cells);
+      }).catch((e) => {
+        alert(e.message || JSON.stringify(e));
+        setOmniAddr(addr);
+        setInputVal(addr);
+      });
+      
+    }
+    setIsEditing(!isEditing);
+  }
+
+  // @ts-ignore
+  function changeTargetAddr(event) {
+    const targetAddr = event.target.value
+    setInputVal(targetAddr);
+  }
+
   if (!ethereum) return <div>MetaMask is not installed</div>;
-  if (!ethAddr) return <button onClick={connectToMetaMask}>Connect to MetaMask</button>;
+  if (!ethAddr) return <button className="button is-info" onClick={connectToMetaMask}>Connect to MetaMask</button>;
 
   return (
-    <div>
-      <h3>Ethereum Address: {ethAddr}</h3>
+    <div style={{marginTop: 20}}>
+      <h3 className="title is-4" >Ethereum Address: {ethAddr}</h3>
 
       {/* @ts-ignore */}
       <div onChange={switchNet.bind(this)}>
+      <label className="radio">
         <input type="radio" value="AGGRON4" defaultChecked name="net" /> AGGRON4
+        </label>
+        <label className="radio">
         <input type="radio" value="LINA" name="net" /> LINA
+        </label>
       </div>
 
-      <div className="account-info">
+      <div id="account-info" className="box">
+        <div className="content">
         <h4>PW-Lock</h4>
         <ul>
           <li>Address: {pwAddr}</li>
@@ -112,12 +143,24 @@ export default function WalletContext() {
             ))}
           </li>
         </ul>
+        </div>
       </div>
 
-      <div className="account-info">
-        <h4>Omni-Lock</h4>
+      <div id="account-info" className="box">
+      <div className="content">
+        <h4>Target Address(Omni-Lock default)</h4>
         <ul>
-          <li>Address: {omniAddr}</li>
+          
+          <li>
+            Address:{" "}
+            {isEditing ? (
+              /* @ts-ignore */
+              <input className="input is-info" type="text" value={inputVal} onChange={changeTargetAddr.bind(this)} />
+            ) : (
+              <span>{omniAddr}</span>
+            )}{" "}
+            <button className="button is-info is-inverted is-small is-rounded" onClick={editState}>{isEditing ? <span>save</span> : <span>edit</span>}</button>
+          </li>
           <li>
             SudtCells:
             <ul>
@@ -129,11 +172,12 @@ export default function WalletContext() {
             </ul>
           </li>
         </ul>
+        </div>
       </div>
 
       <div>
-        <button onClick={onTransfer} disabled={isSendingTx}>
-          Transfer
+        <button className="button is-info" onClick={onTransfer} disabled={isSendingTx}>
+          =&gt;
         </button>
 
         <div>{txHash === "" ? null : <p>Tx Hash: {txHash}</p>}</div>
