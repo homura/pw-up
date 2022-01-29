@@ -92,22 +92,28 @@ export default function WalletContext() {
   // @ts-ignore
   function changeTargetAddr(event) {
     setOmniAddr(event.target.value);
+    // TODO: SET OTHERS
   }
 
   if (!ethereum) return <div>MetaMask is not installed</div>;
-  if (!ethAddr) return <button onClick={connectToMetaMask}>Connect to MetaMask</button>;
+  if (!ethAddr) return <button className="button is-info" onClick={connectToMetaMask}>Connect to MetaMask</button>;
 
   return (
-    <div>
-      <h3>Ethereum Address: {ethAddr}</h3>
+    <div style={{marginTop: 20}}>
+      <h3 className="title is-4" >Ethereum Address: {ethAddr}</h3>
 
       {/* @ts-ignore */}
       <div onChange={switchNet.bind(this)}>
+      <label className="radio">
         <input type="radio" value="AGGRON4" defaultChecked name="net" /> AGGRON4
+        </label>
+        <label className="radio">
         <input type="radio" value="LINA" name="net" /> LINA
+        </label>
       </div>
 
-      <div className="account-info">
+      <div id="account-info" className="box">
+        <div className="content">
         <h4>PW-Lock</h4>
         <ul>
           <li>Address: {pwAddr}</li>
@@ -123,9 +129,11 @@ export default function WalletContext() {
             ))}
           </li>
         </ul>
+        </div>
       </div>
 
-      <div className="account-info">
+      <div id="account-info" className="box">
+      <div className="content">
         <h4>Target Address(Omni-Lock default)</h4>
         <ul>
           
@@ -133,11 +141,11 @@ export default function WalletContext() {
             Address:{" "}
             {isEditing ? (
               /* @ts-ignore */
-              <input type="text" value={omniAddr} onChange={changeTargetAddr.bind(this)} />
+              <input className="input is-info" type="text" value={omniAddr} onChange={changeTargetAddr.bind(this)} />
             ) : (
               <span>{omniAddr}</span>
             )}{" "}
-            <button onClick={editState}>{isEditing ? <span>save</span> : <span>edit</span>}</button>
+            <button className="button is-info is-inverted is-small is-rounded" onClick={editState}>{isEditing ? <span>save</span> : <span>edit</span>}</button>
           </li>
           <li>
             SudtCells:
@@ -150,10 +158,11 @@ export default function WalletContext() {
             </ul>
           </li>
         </ul>
+        </div>
       </div>
 
       <div>
-        <button onClick={onTransfer} disabled={isSendingTx}>
+        <button className="button is-info" onClick={onTransfer} disabled={isSendingTx}>
           =&gt;
         </button>
 
