@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "../css/WalletContext.css";
 import { asyncSleep, ethereum, PwUp } from "../lib/PwUp";
 import { SudtGroup } from "../lib/PwUpTypes";
+import { humanize } from "../lib/amount";
 
 export default function WalletContext() {
   const [ethAddr, setEthAddr] = useState("");
@@ -15,7 +16,7 @@ export default function WalletContext() {
   const [transSudtCells, setTransSudtCells] = useState<SudtGroup[]>([]);
   const [checkedState, setCheckedState] = useState<boolean[]>([]);
 
-  const [pwUp, setPwUp] = useState(new PwUp("AGGRON4"));
+  const [pwUp, setPwUp] = useState(() => new PwUp("AGGRON4"));
 
   const [isSendingTx, setIsSendingTx] = useState(false);
   const [txHash, setTxHash] = useState("");
@@ -30,6 +31,10 @@ export default function WalletContext() {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (ethereum.selectedAddress) connectToMetaMask();
+  }, [pwUp]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function connectToMetaMask() {
     pwUp.connectToWallet().then(() => {
       const ethAddr = pwUp.getEthAddress();
@@ -41,7 +46,7 @@ export default function WalletContext() {
       setOmniAddr(omniAddr);
       setInputVal(omniAddr);
 
-      pwUp.listSudtCells().then((cells) => {
+      pwUp.listSudtCells(pwAddr).then((cells) => {
         setPwSudtCells(cells);
         setTransSudtCells(cells);
         setCheckedState(new Array(cells.length).fill(true));
@@ -71,7 +76,6 @@ export default function WalletContext() {
   // @ts-ignore
   function switchNet(event) {
     setPwUp(new PwUp(event.target.value));
-    connectToMetaMask();
   }
 
   function onTransfer() {
@@ -144,7 +148,7 @@ export default function WalletContext() {
                 <p key={i}>
                   <input type="checkbox" id="i" value="i" defaultChecked={true} onChange={() => handleOnChange(i)} />
                   <label htmlFor="i">
-                    {pwSudtCell.sudt.name}, {pwSudtCell.amount.toString()}
+                    {humanize(pwSudtCell.amount, { decimals: pwSudtCell.sudt.decimals })} {pwSudtCell.sudt.symbol}
                   </label>
                 </p>
               ))}
@@ -174,7 +178,7 @@ export default function WalletContext() {
               <ul>
                 {omniSudtCells.map((omniSudtCell, i) => (
                   <li key={i}>
-                    {omniSudtCell.sudt.name}, {omniSudtCell.amount.toString()}
+                    {humanize(omniSudtCell.amount, { decimals: omniSudtCell.sudt.decimals })} {omniSudtCell.sudt.symbol}
                   </li>
                 ))}
               </ul>
@@ -188,7 +192,18 @@ export default function WalletContext() {
           =&gt;
         </button>
 
-        <div>{txHash === "" ? null : <p>Tx Hash: {txHash}</p>}</div>
+        <div>
+          {txHash === "" ? null : (
+            <div>
+              <p>Tx Hash: {txHash}</p>
+              {pwUp.config.network === "AGGRON4" ? (
+                <a href={`https://explorer.nervos.org/aggron/transaction/${txHash}`}>View on Explorer</a>
+              ) : (
+                <a href={`https://explorer.nervos.org/transaction/${txHash}`}>View on Explorer</a>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

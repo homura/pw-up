@@ -104,16 +104,16 @@ export class PwUp implements PwUpTypes {
       config.initializeConfig(CONFIG_MAINNET);
 
       CONFIG = CONFIG_MAINNET;
-      CKB_RPC_URL = "https://testnet.ckb.dev/rpc";
-      CKB_INDEXER_URL = "https://testnet.ckb.dev/indexer";
+      CKB_RPC_URL = "https://mainnet.ckb.dev/rpc";
+      CKB_INDEXER_URL = "https://mainnet.ckb.dev/indexer";
       rpc = new RPC(CKB_RPC_URL);
       indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
     } else if (network === "AGGRON4") {
       config.initializeConfig(CONFIG_TESTNET);
 
       CONFIG = CONFIG_TESTNET;
-      CKB_RPC_URL = "https://mainnet.ckb.dev/rpc";
-      CKB_INDEXER_URL = "https://mainnet.ckb.dev/indexer";
+      CKB_RPC_URL = "https://testnet.ckb.dev/rpc";
+      CKB_INDEXER_URL = "https://testnet.ckb.dev/indexer";
       rpc = new RPC(CKB_RPC_URL);
       indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
     } else {
