@@ -32,7 +32,7 @@ export default function WalletContext() {
 
   useEffect(() => {
     if (ethereum.selectedAddress) connectToMetaMask();
-  }, [pwUp]);
+  }, [pwUp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function connectToMetaMask() {
     pwUp.connectToWallet().then(() => {
