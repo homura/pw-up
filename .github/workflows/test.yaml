@@ -18,7 +18,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
       - name: Install project dependencies
-        if: steps.yarn-cache.outputs.cache-hit != 'true' # Over here!
-        run: yarn
+        run: yarn --prefer-offline
       - name: Run tests
         run: yarn test
