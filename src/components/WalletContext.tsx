@@ -31,7 +31,7 @@ export default function WalletContext() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    connectToMetaMask();
+    if (ethereum.selectedAddress) connectToMetaMask();
   }, [pwUp]);
 
   function connectToMetaMask() {
@@ -45,7 +45,7 @@ export default function WalletContext() {
       setOmniAddr(omniAddr);
       setInputVal(omniAddr);
 
-      pwUp.listSudtCells().then((cells) => {
+      pwUp.listSudtCells(pwAddr).then((cells) => {
         setPwSudtCells(cells);
         setTransSudtCells(cells);
         setCheckedState(new Array(cells.length).fill(true));
@@ -147,7 +147,7 @@ export default function WalletContext() {
                 <p key={i}>
                   <input type="checkbox" id="i" value="i" defaultChecked={true} onChange={() => handleOnChange(i)} />
                   <label htmlFor="i">
-                    {pwSudtCell.sudt.name}, {pwSudtCell.amount.toString()}
+                    {pwSudtCell.sudt.name}, {pwSudtCell.amount.div("1000000000000000000").toString()}
                   </label>
                 </p>
               ))}
@@ -177,7 +177,7 @@ export default function WalletContext() {
               <ul>
                 {omniSudtCells.map((omniSudtCell, i) => (
                   <li key={i}>
-                    {omniSudtCell.sudt.name}, {omniSudtCell.amount.toString()}
+                    {omniSudtCell.sudt.name}, {omniSudtCell.amount.div("1000000000000000000").toString()}
                   </li>
                 ))}
               </ul>
@@ -191,7 +191,18 @@ export default function WalletContext() {
           =&gt;
         </button>
 
-        <div>{txHash === "" ? null : <p>Tx Hash: {txHash}</p>}</div>
+        <div>
+          {txHash === "" ? null : (
+            <div>
+              <p>Tx Hash: {txHash}</p>
+              {pwUp.config.network === "AGGRON4" ? (
+                <a href={`https://explorer.nervos.org/aggron/transaction/${txHash}`}>View on Explorer</a>
+              ) : (
+                <a href={`https://explorer.nervos.org/transaction/${txHash}`}>View on Explorer</a>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
