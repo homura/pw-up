@@ -64,8 +64,8 @@ export default function WalletContext() {
     setCheckedState(updatedCheckedState);
 
     const transSudt: SudtGroup[] = [];
-    for (let i = 0; i < checkedState.length; i++) {
-      if (checkedState[i]) {
+    for (let i = 0; i < updatedCheckedState.length; i++) {
+      if (updatedCheckedState[i]) {
         transSudt.push(pwSudtCells[i]);
       }
     }
