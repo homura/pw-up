@@ -137,9 +137,9 @@ export default function WalletContext() {
         </label>
       </div>
 
-      <div id="account-info" className="box">
+      <div className="box account-info">
         <div className="content">
-          <h4>PW-Lock</h4>
+          <h4>FROM</h4>
           <ul>
             <li>Address: {pwAddr}</li>
             <li>
@@ -147,7 +147,7 @@ export default function WalletContext() {
               {pwSudtCells.map((pwSudtCell, i) => (
                 <p key={i}>
                   <input type="checkbox" id="i" value="i" defaultChecked={true} onChange={() => handleOnChange(i)} />
-                  <label htmlFor="i">
+                  <label htmlFor="i" style={{ marginLeft: "4px" }}>
                     {humanize(pwSudtCell.amount, { decimals: pwSudtCell.sudt.decimals })} {pwSudtCell.sudt.symbol}
                   </label>
                 </p>
@@ -157,9 +157,9 @@ export default function WalletContext() {
         </div>
       </div>
 
-      <div id="account-info" className="box">
+      <div className="box account-info">
         <div className="content">
-          <h4>Target Address(Omni-Lock default)</h4>
+          <h4>TO</h4>
           <ul>
             <li>
               Address:{" "}
@@ -188,8 +188,12 @@ export default function WalletContext() {
       </div>
 
       <div>
-        <button className="button is-info" onClick={onTransfer} disabled={isSendingTx}>
-          =&gt;
+        <button
+          className="button is-info"
+          onClick={onTransfer}
+          disabled={isSendingTx || checkedState.every((checked) => !checked)}
+        >
+          Transfer
         </button>
 
         <div>
