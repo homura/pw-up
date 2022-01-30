@@ -15,7 +15,7 @@ export default function WalletContext() {
   const [transSudtCells, setTransSudtCells] = useState<SudtGroup[]>([]);
   const [checkedState, setCheckedState] = useState<boolean[]>([]);
 
-  const [pwUp, setPwUp] = useState(new PwUp("AGGRON4"));
+  const [pwUp, setPwUp] = useState(() => new PwUp("AGGRON4"));
 
   const [isSendingTx, setIsSendingTx] = useState(false);
   const [txHash, setTxHash] = useState("");
@@ -29,6 +29,10 @@ export default function WalletContext() {
       ethereum.addListener("accountsChanged", connectToMetaMask);
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    connectToMetaMask();
+  }, [pwUp]);
 
   function connectToMetaMask() {
     pwUp.connectToWallet().then(() => {
@@ -71,7 +75,6 @@ export default function WalletContext() {
   // @ts-ignore
   function switchNet(event) {
     setPwUp(new PwUp(event.target.value));
-    connectToMetaMask();
   }
 
   function onTransfer() {
