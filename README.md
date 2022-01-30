@@ -7,6 +7,7 @@ to [omni-lock](https://github.com/XuJiandong/docs-bank/blob/master/omni_lock.md)
 
 ```
 git clone https://github.com/homura/pw-up.git
+yarn
 yarn start
 ```
 
