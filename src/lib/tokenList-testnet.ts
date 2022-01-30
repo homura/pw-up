@@ -1,4 +1,6 @@
-export const SUDT_WHITE_LIST = [
+import { Sudt } from "./PwUpTypes";
+
+export const SUDT_WHITE_LIST: Sudt[] = [
   {
     symbol: "USDC",
     name: "USD Coin",

@@ -1,8 +1,10 @@
-import { SUDT_WHITE_LIST } from "./tokenList";
 import { NetworkType, PwUpConfig, PwUpTypes, Sudt, SudtGroup } from "./PwUpTypes";
 import { Address, BI, Cell, config, core, helpers, Indexer, RPC, Script, toolkit, utils } from "@ckb-lumos/lumos";
 import { default as createKeccak } from "keccak";
 import { debug } from "./debug";
+import { humanize } from "./amount";
+import { SUDT_WHITE_LIST as TESTNET_WHITELIST } from "./tokenList-testnet";
+import { SUDT_WHITE_LIST as MAINNET_WHITELIST } from "./tokenList-mainnet";
 
 export const CONFIG_TESTNET = config.createConfig({
   PREFIX: "ckt",
@@ -123,7 +125,7 @@ export class PwUp implements PwUpTypes {
     if (network === "AGGRON4") {
       this.config = {
         network: "AGGRON4",
-        supportedSudts: SUDT_WHITE_LIST as Sudt[],
+        supportedSudts: TESTNET_WHITELIST,
         ckbRpcUrl: CKB_RPC_URL,
         indexerRpcUrl: CKB_INDEXER_URL,
         pwLockScriptConfig: CONFIG.SCRIPTS.PW_LOCK,
@@ -132,7 +134,7 @@ export class PwUp implements PwUpTypes {
     } else if (network === "LINA") {
       this.config = {
         network: "LINA",
-        supportedSudts: SUDT_WHITE_LIST as Sudt[],
+        supportedSudts: MAINNET_WHITELIST,
         ckbRpcUrl: CKB_RPC_URL,
         indexerRpcUrl: CKB_INDEXER_URL,
         pwLockScriptConfig: CONFIG.SCRIPTS.PW_LOCK,
@@ -194,7 +196,7 @@ export class PwUp implements PwUpTypes {
   }
 
   getSudtWhiteList(): Sudt[] {
-    return this.config.supportedSudts || SUDT_WHITE_LIST;
+    return this.config.supportedSudts;
   }
 
   async listSudtCells(address?: string | undefined): Promise<SudtGroup[]> {
@@ -229,6 +231,11 @@ export class PwUp implements PwUpTypes {
 
   async transferPwToOmni(groups: SudtGroup[], targetLock = this.getOmniAddress()): Promise<Address> {
     let tx = helpers.TransactionSkeleton({});
+
+    if (!this.checkAddress(targetLock)) {
+      throw new Error("Invalid target address");
+    }
+
     debug("transfer target", targetLock);
 
     const fromScript = helpers.parseAddress(this.getPwAddress());
@@ -282,16 +289,22 @@ export class PwUp implements PwUpTypes {
       };
       const needCapacity = BI.from(helpers.minimalCellCapacity(dummySudtCell)).add(txFee).add(appendSudtCapacity);
       let collectedSum = BI.from(0);
-      const collector = indexer.collector({ lock: fromScript, type: "empty" });
+      const collector = indexer.collector({ lock: fromScript, type: "empty", outputDataLenRange: ["0x0", "0x1"] });
       for await (const cell of collector.collect()) {
-        if (!cell.data || cell.data === "0x" || cell.data === "0x0" || cell.data === "0x00") {
+        const hasNoData = !cell.data || cell.data === "0x";
+        const hasNoType = !cell.cell_output.type;
+        if (hasNoData && hasNoType) {
           collectedSum = collectedSum.add(BI.from(cell.cell_output.capacity));
           inputCells.push(cell);
-          if (collectedSum.gte(needCapacity)) break;
         }
+
+        if (collectedSum.gte(needCapacity)) break;
       }
       if (collectedSum.lt(needCapacity)) {
-        throw new Error("Not enough ckb for tx fee");
+        const neededAdditional = humanize(needCapacity, { decimals: 8 });
+        const actualCollected = humanize(collectedSum, { decimals: 8 });
+
+        throw new Error(`Additional CKB is not enough, needed ${neededAdditional} but only ${actualCollected}`);
       }
       ouputCells.push({
         cell_output: {
