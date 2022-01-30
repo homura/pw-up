@@ -1,46 +1,28 @@
-# Getting Started with Create React App
+# pw-up
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This tools helps you transfer your sUDT from [pw-lock](https://docs.nervos.org/docs/essays/pw-lock)
+to [omni-lock](https://github.com/XuJiandong/docs-bank/blob/master/omni_lock.md).
 
-## Available Scripts
+## Quick Start
 
-In the project directory, you can run:
+```
+git clone https://github.com/homura/pw-up.git
+yarn start
+```
 
-### `yarn start`
+## FAQ
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### Why I need this tool?
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+I want to use [yokaiswap](https://www.yokaiswap.com/), but the current yokaiswap support is omni-lock, so I need to
+transfer my assets to omni-lock first
 
-### `yarn test`
+### Is there a version for online deployment, I don't want to compile it myself
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+We do offer an [online version](https://pw-up.vercel.app/), but whether it is online or not, you use this tool AT YOUR
+OWN RISK!
 
-### `yarn build`
+### Why the tool asks me additional CKB to transfer to Omni lock?
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `yarn eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+Because Omni lock requires more CKB than PW lock, but please don't worry, this part of CKB is only temporarily occupied,
+and each asset (cell) will only occupy 2 additional CKB.
