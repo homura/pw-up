@@ -1,3 +1,4 @@
+import { BI } from "@ckb-lumos/lumos";
 import React, { useEffect, useState } from "react";
 import "../css/WalletContext.css";
 import { asyncSleep, ethereum, PwUp } from "../lib/PwUp";
@@ -114,6 +115,24 @@ export default function WalletContext() {
     setInputVal(targetAddr);
   }
 
+  function humanizeAmount(sudtGroup: SudtGroup): string {
+    const integer = sudtGroup.amount.div(BI.from(10).pow(sudtGroup.sudt.decimals)).toString();
+    let decimal = sudtGroup.amount.mod(BI.from(10).pow(sudtGroup.sudt.decimals)).toString();
+    for (let i = decimal.length - 1; i >= 0; i--) {
+      if (decimal.charAt(i) === "0") {
+        decimal = decimal.slice(0, -1);
+      } else {
+        break;
+      }
+    }
+
+    if (decimal === "") {
+      return integer;
+    } else {
+      return integer + "." + decimal;
+    }
+  }
+
   if (!ethereum) return <div>MetaMask is not installed</div>;
   if (!ethAddr)
     return (
@@ -147,7 +166,7 @@ export default function WalletContext() {
                 <p key={i}>
                   <input type="checkbox" id="i" value="i" defaultChecked={true} onChange={() => handleOnChange(i)} />
                   <label htmlFor="i">
-                    {pwSudtCell.sudt.name}, {pwSudtCell.amount.div("1000000000000000000").toString()}
+                    {humanizeAmount(pwSudtCell)} {pwSudtCell.sudt.name}
                   </label>
                 </p>
               ))}
@@ -177,7 +196,7 @@ export default function WalletContext() {
               <ul>
                 {omniSudtCells.map((omniSudtCell, i) => (
                   <li key={i}>
-                    {omniSudtCell.sudt.name}, {omniSudtCell.amount.div("1000000000000000000").toString()}
+                    {humanizeAmount(omniSudtCell)} {omniSudtCell.sudt.name}
                   </li>
                 ))}
               </ul>
