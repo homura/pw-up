@@ -23,6 +23,7 @@ export default function WalletContext() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [inputVal, setInputVal] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
     asyncSleep(100).then(() => {
@@ -36,26 +37,32 @@ export default function WalletContext() {
   }, [pwUp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function connectToMetaMask() {
-    pwUp.connectToWallet().then(() => {
-      const ethAddr = pwUp.getEthAddress();
-      setEthAddr(ethAddr);
+    setIsConnecting(true);
+    pwUp
+      .connectToWallet()
+      .then(async () => {
+        const ethAddr = pwUp.getEthAddress();
+        setEthAddr(ethAddr);
 
-      const pwAddr = pwUp.getPwAddress();
-      setPwAddr(pwAddr);
-      const omniAddr = pwUp.getOmniAddress();
-      setOmniAddr(omniAddr);
-      setInputVal(omniAddr);
+        const pwAddr = pwUp.getPwAddress();
+        setPwAddr(pwAddr);
+        const omniAddr = pwUp.getOmniAddress();
+        setOmniAddr(omniAddr);
+        setInputVal(omniAddr);
 
-      pwUp.listSudtCells(pwAddr).then((cells) => {
-        setPwSudtCells(cells);
-        setTransSudtCells(cells);
-        setCheckedState(new Array(cells.length).fill(true));
-      });
+        const listPwSudtsTask = pwUp.listSudtCells(pwAddr).then((cells) => {
+          setPwSudtCells(cells);
+          setTransSudtCells(cells);
+          setCheckedState(new Array(cells.length).fill(true));
+        });
 
-      pwUp.listSudtCells(omniAddr).then((cells) => {
-        setOminiSudtCells(cells);
-      });
-    });
+        const listOmniSudtsTask = pwUp.listSudtCells(omniAddr).then((cells) => {
+          setOminiSudtCells(cells);
+        });
+
+        await Promise.all([listPwSudtsTask, listOmniSudtsTask]);
+      })
+      .finally(() => setIsConnecting(false));
   }
 
   function handleOnChange(position: number) {
@@ -73,9 +80,12 @@ export default function WalletContext() {
     setTransSudtCells(transSudt);
   }
 
-  // @ts-ignore
-  function switchNet(event) {
-    setPwUp(new PwUp(event.target.value));
+  function switchNet(network: string) {
+    if (network !== "LINA" && network !== "AGGRON4") {
+      throw new Error("Unknown network type");
+    }
+
+    setPwUp(new PwUp(network));
   }
 
   function onTransfer() {
@@ -109,12 +119,6 @@ export default function WalletContext() {
     setIsEditing(!isEditing);
   }
 
-  // @ts-ignore
-  function changeTargetAddr(event) {
-    const targetAddr = event.target.value;
-    setInputVal(targetAddr);
-  }
-
   if (!ethereum) return <div>MetaMask is not installed</div>;
   if (!ethAddr)
     return (
@@ -123,17 +127,34 @@ export default function WalletContext() {
       </button>
     );
 
+  if (isConnecting) {
+    return <h2 className="title is-4">Please wait...</h2>;
+  }
+
   return (
     <div style={{ marginTop: 20 }}>
       <h3 className="title is-4">Ethereum Address: {ethAddr}</h3>
 
-      {/* @ts-ignore */}
-      <div onChange={switchNet.bind(this)}>
+      <div>
         <label className="radio">
-          <input type="radio" value="AGGRON4" defaultChecked name="net" /> AGGRON4
+          <input
+            type="radio"
+            value="AGGRON4"
+            name="net"
+            checked={pwUp.config.network === "AGGRON4"}
+            onChange={(e) => switchNet(e.target.value)}
+          />{" "}
+          AGGRON4
         </label>
         <label className="radio">
-          <input type="radio" value="LINA" name="net" /> LINA
+          <input
+            type="radio"
+            value="LINA"
+            name="net"
+            checked={pwUp.config.network === "LINA"}
+            onChange={(e) => switchNet(e.target.value)}
+          />{" "}
+          LINA
         </label>
       </div>
 
@@ -164,8 +185,12 @@ export default function WalletContext() {
             <li>
               Address:{" "}
               {isEditing ? (
-                /* @ts-ignore */
-                <input className="input is-info" type="text" value={inputVal} onChange={changeTargetAddr.bind(this)} />
+                <input
+                  className="input is-info"
+                  type="text"
+                  value={inputVal}
+                  onChange={(e) => setInputVal(e.target.value)}
+                />
               ) : (
                 <span>{omniAddr}</span>
               )}{" "}

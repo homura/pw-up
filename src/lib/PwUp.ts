@@ -58,6 +58,7 @@ let indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
 
 interface EthereumRpc {
   (payload: { method: "personal_sign"; params: [string /*from*/, string /*message*/] }): Promise<string>;
+  (payload: { method: "eth_requestAccounts" }): Promise<string[]>;
 }
 
 export interface EthereumProvider {
@@ -154,7 +155,7 @@ export class PwUp implements PwUpTypes {
 
     ethereum = window.ethereum;
 
-    ethereum.enable().then(([ethAddr]: string[]) => {
+    await ethereum.request({ method: "eth_requestAccounts" }).then(([ethAddr]: string[]) => {
       this.isConnected = true;
       console.log("Connected to wallet", ethAddr);
     });
