@@ -304,8 +304,9 @@ export class PwUp implements PwUpTypes {
       if (collectedSum.lt(needCapacity)) {
         const neededAdditional = humanize(needCapacity, { decimals: 8 });
         const actualCollected = humanize(collectedSum, { decimals: 8 });
+        console.log("actual collected", actualCollected);
 
-        throw new Error(`Additional CKB is not enough, needed ${neededAdditional} but only ${actualCollected}`);
+        throw new Error(`From address CKB is not enough, send at least ${neededAdditional} CKB to ${this.getPwAddress()} to continue`);
       }
       ouputCells.push({
         cell_output: {
