@@ -5,6 +5,7 @@ import { debug } from "./debug";
 import { humanize } from "./amount";
 import { SUDT_WHITE_LIST as TESTNET_WHITELIST } from "./tokenList-testnet";
 import { SUDT_WHITE_LIST as MAINNET_WHITELIST } from "./tokenList-mainnet";
+import detectEthereumProvider from "@metamask/detect-provider";
 
 export const CONFIG_TESTNET = config.createConfig({
   PREFIX: "ckt",
@@ -70,13 +71,7 @@ export interface EthereumProvider {
   request: EthereumRpc;
 }
 
-declare global {
-  interface Window {
-    ethereum?: EthereumProvider;
-  }
-}
-
-export let ethereum = window.ethereum!;
+export let ethereum = window.ethereum! as EthereumProvider;
 
 export function asyncSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -97,6 +92,10 @@ function findCellSudt(cell: Cell, whiteList: Sudt[]): Sudt | undefined {
 type Mutable<T> = {
   -readonly [k in keyof T]: T[k];
 };
+
+export function detect(): Promise<EthereumProvider> {
+  return detectEthereumProvider().then(() => window.ethereum as EthereumProvider);
+}
 
 export class PwUp implements PwUpTypes {
   config: PwUpConfig;
@@ -148,12 +147,11 @@ export class PwUp implements PwUpTypes {
 
   async connectToWallet(): Promise<void> {
     // wait 300ms for ethereum provider to be ready
+    const ethereum = await detect();
     if (!ethereum) {
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
     if (!window.ethereum) throw new Error("No ethereum provider found");
-
-    ethereum = window.ethereum;
 
     await ethereum.request({ method: "eth_requestAccounts" }).then(([ethAddr]: string[]) => {
       this.isConnected = true;
@@ -306,7 +304,9 @@ export class PwUp implements PwUpTypes {
         const actualCollected = humanize(collectedSum, { decimals: 8 });
         console.log("actual collected", actualCollected);
 
-        throw new Error(`From address CKB is not enough, send at least ${neededAdditional} CKB to ${this.getPwAddress()} to continue`);
+        throw new Error(
+          `From address CKB is not enough, send at least ${neededAdditional} CKB to ${this.getPwAddress()} to continue`
+        );
       }
       ouputCells.push({
         cell_output: {
