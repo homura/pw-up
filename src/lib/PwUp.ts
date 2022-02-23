@@ -64,6 +64,8 @@ interface EthereumRpc {
 
 export interface EthereumProvider {
   selectedAddress: string;
+  address?: string;
+  isSafePal?: boolean;
   isMetaMask?: boolean;
   enable: () => Promise<string[]>;
   addListener: (event: "accountsChanged", listener: (addresses: string[]) => void) => void;
@@ -148,9 +150,6 @@ export class PwUp implements PwUpTypes {
   async connectToWallet(): Promise<void> {
     // wait 300ms for ethereum provider to be ready
     const ethereum = await detect();
-    ethereum.addListener("accountsChanged", (addressList) => {
-      ethereum.selectedAddress = addressList[0];
-    });
     if (!ethereum) {
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
@@ -165,6 +164,8 @@ export class PwUp implements PwUpTypes {
   getEthAddress(): Address {
     if (ethereum && ethereum.selectedAddress) {
       return ethereum.selectedAddress;
+    } else if (ethereum && ethereum.address) {
+      return ethereum.address;
     } else {
       throw new Error("Please connect wallet first");
     }
@@ -225,7 +226,7 @@ export class PwUp implements PwUpTypes {
         if (!group) throw new Error("Impossible error");
 
         group.cells.push(cell);
-        group.amount = group.amount.add(BI.from(utils.readBigUInt128LE(cell.data)));
+        group.amount = group.amount.add(BI.from(utils.readBigUInt128LECompatible(cell.data)));
       }
     }
     return Array.from(groups.values());
@@ -378,10 +379,10 @@ export class PwUp implements PwUpTypes {
 
       return "0x" + keccak.digest("hex");
     })();
-
+    const address = ethereum.address || ethereum.selectedAddress;
     let signedMessage = await ethereum.request({
       method: "personal_sign",
-      params: [ethereum.selectedAddress, messageForSigning],
+      params: [address, messageForSigning],
     });
 
     let v = Number.parseInt(signedMessage.slice(-2), 16);
