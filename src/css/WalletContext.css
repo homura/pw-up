@@ -7,3 +7,10 @@
   text-align: left;
   vertical-align: top;
 }
+
+@media screen and (max-width: 600px) {
+  .account-info {
+    width: 80%;
+    padding: 20px;
+  }
+}
