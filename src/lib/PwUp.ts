@@ -148,6 +148,9 @@ export class PwUp implements PwUpTypes {
   async connectToWallet(): Promise<void> {
     // wait 300ms for ethereum provider to be ready
     const ethereum = await detect();
+    ethereum.addListener("accountsChanged", (addressList) => {
+      ethereum.selectedAddress = addressList[0];
+    });
     if (!ethereum) {
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
