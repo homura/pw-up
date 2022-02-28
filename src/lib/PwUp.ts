@@ -58,7 +58,10 @@ let rpc = new RPC(CKB_RPC_URL);
 let indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
 
 interface EthereumRpc {
-  (payload: { method: "personal_sign"; params: [string /*from*/, string /*message*/] }): Promise<string>;
+  (payload: {
+    method: "personal_sign";
+    params: [string /*from*/, string /*message*/] | [string /* message */];
+  }): Promise<string>;
   (payload: { method: "eth_requestAccounts" }): Promise<string[]>;
 }
 
@@ -382,7 +385,7 @@ export class PwUp implements PwUpTypes {
     const address = ethereum.address || ethereum.selectedAddress;
     let signedMessage = await ethereum.request({
       method: "personal_sign",
-      params: [address, messageForSigning],
+      params: ethereum.isSafePal ? [messageForSigning] : [address, messageForSigning],
     });
 
     let v = Number.parseInt(signedMessage.slice(-2), 16);
