@@ -5,6 +5,7 @@ import { debug } from "./debug";
 import { humanize } from "./amount";
 import { SUDT_WHITE_LIST as TESTNET_WHITELIST } from "./tokenList-testnet";
 import { SUDT_WHITE_LIST as MAINNET_WHITELIST } from "./tokenList-mainnet";
+import detectEthereumProvider from "@metamask/detect-provider";
 
 export const CONFIG_TESTNET = config.createConfig({
   PREFIX: "ckt",
@@ -57,12 +58,17 @@ let rpc = new RPC(CKB_RPC_URL);
 let indexer = new Indexer(CKB_INDEXER_URL, CKB_RPC_URL);
 
 interface EthereumRpc {
-  (payload: { method: "personal_sign"; params: [string /*from*/, string /*message*/] }): Promise<string>;
+  (payload: {
+    method: "personal_sign";
+    params: [string /*from*/, string /*message*/] | [string /* message */];
+  }): Promise<string>;
   (payload: { method: "eth_requestAccounts" }): Promise<string[]>;
 }
 
 export interface EthereumProvider {
   selectedAddress: string;
+  address?: string;
+  isSafePal?: boolean;
   isMetaMask?: boolean;
   enable: () => Promise<string[]>;
   addListener: (event: "accountsChanged", listener: (addresses: string[]) => void) => void;
@@ -70,13 +76,7 @@ export interface EthereumProvider {
   request: EthereumRpc;
 }
 
-declare global {
-  interface Window {
-    ethereum?: EthereumProvider;
-  }
-}
-
-export let ethereum = window.ethereum!;
+export let ethereum = window.ethereum! as EthereumProvider;
 
 export function asyncSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -97,6 +97,10 @@ function findCellSudt(cell: Cell, whiteList: Sudt[]): Sudt | undefined {
 type Mutable<T> = {
   -readonly [k in keyof T]: T[k];
 };
+
+export function detect(): Promise<EthereumProvider> {
+  return detectEthereumProvider().then(() => window.ethereum as EthereumProvider);
+}
 
 export class PwUp implements PwUpTypes {
   config: PwUpConfig;
@@ -148,12 +152,11 @@ export class PwUp implements PwUpTypes {
 
   async connectToWallet(): Promise<void> {
     // wait 300ms for ethereum provider to be ready
+    const ethereum = await detect();
     if (!ethereum) {
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
     if (!window.ethereum) throw new Error("No ethereum provider found");
-
-    ethereum = window.ethereum;
 
     await ethereum.request({ method: "eth_requestAccounts" }).then(([ethAddr]: string[]) => {
       this.isConnected = true;
@@ -164,6 +167,8 @@ export class PwUp implements PwUpTypes {
   getEthAddress(): Address {
     if (ethereum && ethereum.selectedAddress) {
       return ethereum.selectedAddress;
+    } else if (ethereum && ethereum.address) {
+      return ethereum.address;
     } else {
       throw new Error("Please connect wallet first");
     }
@@ -224,7 +229,7 @@ export class PwUp implements PwUpTypes {
         if (!group) throw new Error("Impossible error");
 
         group.cells.push(cell);
-        group.amount = group.amount.add(BI.from(utils.readBigUInt128LE(cell.data)));
+        group.amount = group.amount.add(BI.from(utils.readBigUInt128LECompatible(cell.data)));
       }
     }
     return Array.from(groups.values());
@@ -306,7 +311,9 @@ export class PwUp implements PwUpTypes {
         const actualCollected = humanize(collectedSum, { decimals: 8 });
         console.log("actual collected", actualCollected);
 
-        throw new Error(`From address CKB is not enough, send at least ${neededAdditional} CKB to ${this.getPwAddress()} to continue`);
+        throw new Error(
+          `From address CKB is not enough, send at least ${neededAdditional} CKB to ${this.getPwAddress()} to continue`
+        );
       }
       ouputCells.push({
         cell_output: {
@@ -375,10 +382,10 @@ export class PwUp implements PwUpTypes {
 
       return "0x" + keccak.digest("hex");
     })();
-
+    const address = ethereum.address || ethereum.selectedAddress;
     let signedMessage = await ethereum.request({
       method: "personal_sign",
-      params: [ethereum.selectedAddress, messageForSigning],
+      params: ethereum.isSafePal ? [messageForSigning] : [address, messageForSigning],
     });
 
     let v = Number.parseInt(signedMessage.slice(-2), 16);

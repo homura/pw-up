@@ -27,13 +27,13 @@ export default function WalletContext() {
 
   useEffect(() => {
     asyncSleep(100).then(() => {
-      if (ethereum.selectedAddress) connectToMetaMask();
+      if (ethereum.selectedAddress || (ethereum.isSafePal && ethereum.address)) connectToMetaMask();
       ethereum.addListener("accountsChanged", connectToMetaMask);
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (ethereum.selectedAddress) connectToMetaMask();
+    if (ethereum.selectedAddress || (ethereum.isSafePal && ethereum.address)) connectToMetaMask();
   }, [pwUp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function connectToMetaMask() {

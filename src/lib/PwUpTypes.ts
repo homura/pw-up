@@ -32,6 +32,7 @@ interface EthereumRpc {
 }
 
 export interface EthereumProvider {
+  address: string;
   selectedAddress: string;
   isMetaMask?: boolean;
   enable: () => Promise<string[]>;
