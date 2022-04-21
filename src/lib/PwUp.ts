@@ -375,7 +375,7 @@ export class PwUp implements PwUpTypes {
 
       const lengthBuffer = new ArrayBuffer(8);
       const view = new DataView(lengthBuffer);
-      view.setBigUint64(0, BigInt(new toolkit.Reader(serializedWitness).length()), true);
+      view.setUint32(0, serializedWitness.byteLength, true);
 
       keccak.update(Buffer.from(new Uint8Array(lengthBuffer)));
       keccak.update(Buffer.from(new Uint8Array(serializedWitness)));
