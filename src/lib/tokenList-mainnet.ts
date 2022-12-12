@@ -1,8 +1,22 @@
 import { Sudt } from "./PwUpTypes";
 import { config } from "@ckb-lumos/lumos";
 
-// https://github.com/nervosnetwork/force-bridge/blob/e533240e544df816a09bbcb3d4a30f48f9775e67/configs/all-bridged-tokens.json
 export const SUDT_WHITE_LIST: Sudt[] = [
+  // layer1 sudt
+  {
+    symbol: "dCKB",
+    name: "NexisDAO token",
+    decimal: 8,
+    logoURI:
+      "data:image/png;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAQDAwQDAwQEAwQFBAQFBgoHBgYGBg0JCggKDw0QEA8NDw4RExgUERIXEg4PFRwVFxkZGxsbEBQdHx0aHxgaGxr/2wBDAQQFBQYFBgwHBwwaEQ8RGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhr/wAARCAAoACgDASIAAhEBAxEB/8QAGwAAAwACAwAAAAAAAAAAAAAAAAQGAwUCBwj/xAAqEAABBAEDAwMDBQAAAAAAAAACAAEDBBIFESITIVEVMkIUI4EkMUFxcv/EABkBAAMBAQEAAAAAAAAAAAAAAAMEBgIFAf/EACARAAICAgEFAQAAAAAAAAAAAAACAwQBEhETIjEyQiT/2gAMAwEAAhEDEQA/APeV29HRizl/DeVK29Xs23fk8QeA7I1e2Vu4ffgHBlHUCs+tyPJMZRkRcSLimYotlbJJX78jSaJ6lJkW++RZJ2rq9qq7NmUoeD7rL1a3puGDdXH3Y98lEXys+txvHMYgJCOIlxWki37RSVpKmrI3sduUrsd6Fji/b+W8IUro9t6lwO+4HwdCXzgpa1xJY9n8iRZbll7kjFTwsdTb5LeaxUepdk2beM+bLLYirDp4nGYkZY8ckZX1J9a/dIrfJPfWfqejv8sVylp52Ort8lpsbPr23RPDqb5Y8cf9K2rxVn08jkNhMRLjlyR3bp6gq/6WZW+TXDvmOPuQndHqPbux7t9sOboSnPA3WpNPHv4Kq7RjuwdOT8P4Urb0izUd+BSh5DuhC8U7V2tHKnUbyJYlvtiWSdqaRatu3Aog8n2QhaY4lKuk78OVVKjHRhYI2/t/KEIQStRMLjjB/9k=",
+    sudtArgs: "0xe5451c05231e1df43e4b199b5d12dbed820dfbea2769943bb593f874526eeb55",
+    ckbExplorerUrl:
+      "https://explorer.nervos.org/sudt/0xe78165e8b96ceea99bf93bdb86cb5b63d32c265045d674bc53da7e444bb31e1a",
+    ckbL2ContractAddress: "",
+  },
+
+  // bridged tokens
+  // https://github.com/nervosnetwork/force-bridge/blob/e533240e544df816a09bbcb3d4a30f48f9775e67/configs/all-bridged-tokens.json
   {
     address: "0x0000000000000000000000000000000000000000",
     symbol: "ETH|eth",
